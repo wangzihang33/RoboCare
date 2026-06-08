@@ -1,0 +1,3 @@
+external_data_path: data/external/records.csv
+
+amap_key: ""   # 从 .env 的 AMAP_KEY 注入
