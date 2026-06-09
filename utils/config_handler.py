@@ -16,7 +16,8 @@ def load_env_file(env_path: str = get_abs_path(".env"), encoding: str = "utf-8")
             key, value = line.split("=", 1)
             key = key.strip()
             value = value.strip().strip('"').strip("'")
-            os.environ.setdefault(key, value)
+            if value and not os.environ.get(key):
+                os.environ[key] = value
 
 
 def apply_env_overrides(config: dict, mapping: dict[str, str]):
@@ -49,12 +50,14 @@ def load_agent_config(config_path: str=get_abs_path("config/agent.yml"), encodin
         config = yaml.load(f, Loader=yaml.FullLoader)
     return apply_env_overrides(config, {
         "amap_key": "AMAP_KEY",
+        "amap_weather_api_url": "AMAP_WEATHER_API_URL",
     })
     
 def load_websearch_config(config_path: str = get_abs_path("config/websearch.yml"), encoding: str = "utf-8"):
     with open(config_path, "r", encoding=encoding) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
     return apply_env_overrides(config, {
+        "serper_api_url": "SERPER_API_URL",
         "serper_api_key": "SERPER_API_KEY",
         "openai_api_key": "OPENAI_API_KEY",
     })

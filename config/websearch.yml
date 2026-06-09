@@ -1,3 +1,4 @@
+serper_api_url: ""   # 从 .env 的 SERPER_API_URL 注入
 serper_api_key: ""   # 从 .env 的 SERPER_API_KEY 注入
 openai_api_key: ""   # 从 .env 的 OPENAI_API_KEY 注入
 model_name: "gpt-4o"

@@ -1,12 +1,14 @@
 from langchain_chroma import Chroma
-from utils.config_handler import chroma_conf
+from utils.config_handler import chroma_conf, rag_conf
 from model.factory import embed_model
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from utils.path_tool import get_abs_path
 import os
+import re
 from utils.file_handler import txt_loader, pdf_loader, listdir_with_allowed_type, get_file_md5_hex
 from utils.logger_handler import logger
 from langchain_core.documents import Document
+from rag.reranker import DashScopeReranker
 
 from rank_bm25 import BM25Okapi
 import numpy as np
@@ -51,9 +53,38 @@ class VectorStoreService:
             with open(get_abs_path(chroma_conf["md5_hex_store"]), 'a', encoding="utf-8") as f:
                 f.write(md5_for_check + "\n")
 
+        def get_txt_card_documents(read_path: str) -> list[Document]:
+            with open(read_path, "r", encoding="utf-8") as f:
+                text = f.read()
+
+            card_pattern = re.compile(r"^##\s+([A-Z0-9-]+)\s+(.+)$", re.M)
+            matches = list(card_pattern.finditer(text))
+            if not matches:
+                return txt_loader(read_path)
+
+            documents: list[Document] = []
+            for idx, match in enumerate(matches):
+                card_id = match.group(1).strip()
+                card_title = match.group(2).strip()
+                start = match.end()
+                end = matches[idx + 1].start() if idx + 1 < len(matches) else len(text)
+                body = text[start:end].strip()
+                page_content = f"卡片ID：{card_id}\n标题：{card_title}\n{body}"
+                documents.append(
+                    Document(
+                        page_content=page_content,
+                        metadata={
+                            "source": read_path,
+                            "card_id": card_id,
+                            "card_title": card_title,
+                        },
+                    )
+                )
+            return documents
+
         def get_file_documents(read_path: str):
             if read_path.endswith("txt"):
-                return txt_loader(read_path)
+                return get_txt_card_documents(read_path)
             if read_path.endswith("pdf"):
                 return pdf_loader(read_path)
             return []
@@ -90,15 +121,15 @@ class VectorStoreService:
                 logger.error(f"[加载数据库]{path}处理失败: {str(e)}", exc_info=True)
                 continue
 
-    #### 新增融合检索方法 ####
-    def get_fusion_retriever(self, alpha=0.7, k=None):
+    #### RRF 融合检索方法 ####
+    def get_fusion_retriever(self, k=None, rrf_k=60, candidate_k=None):
         """
-        向量检索 + BM25 检索融合，通过 doc_id 对齐
-        alpha: 向量权重, 1-alpha 为 BM25 权重
-        k: 返回 top-k 文档
+        向量检索 + BM25 检索的 Reciprocal Rank Fusion。
+
+        RRF 不直接混合不同检索器的原始分数，而是融合各自的排名：
+        score = sum(1 / (rrf_k + rank))
         """
         k = k or chroma_conf["k"]
-        epsilon = 1e-8
 
         # 获取所有文档及元数据（包含 doc_id）
         all_docs_data = self.vector_store.get(include=["documents", "metadatas"])
@@ -114,55 +145,92 @@ class VectorStoreService:
         # 构建 BM25 索引
         tokenized_texts = [list(jieba.cut(d["text"])) for d in docs]
         bm25 = BM25Okapi(tokenized_texts)
+        doc_by_id = {d["doc_id"]: d for d in docs}
+        fetch_k = candidate_k or min(len(docs), max(k * 10, 20))
 
         def fusion_invoke(query: str):
-            # 1. 向量检索所有文档（返回距离）
-            vector_results = self.vector_store.similarity_search_with_score(query, k=len(docs))
+            candidates: dict[str, dict] = {}
 
-            # 2. BM25 得分（原始顺序）
+            def add_ranked_doc(doc_id: str, rank: int, channel: str):
+                if not doc_id:
+                    return
+                candidate = candidates.setdefault(
+                    doc_id,
+                    {
+                        "doc_id": doc_id,
+                        "score": 0.0,
+                        "channels": [],
+                    },
+                )
+                candidate["score"] += 1 / (rrf_k + rank)
+                candidate["channels"].append(channel)
+
+            # 1. 向量检索候选，并按向量排名贡献 RRF 分数
+            vector_results = self.vector_store.similarity_search(query, k=fetch_k)
+            for rank, doc in enumerate(vector_results, start=1):
+                add_ranked_doc(str(doc.metadata.get("doc_id") or ""), rank, "vector")
+
+            # 2. BM25 检索候选，并按 BM25 排名贡献 RRF 分数
             query_tokens = list(jieba.cut(query))
             bm25_scores = bm25.get_scores(query_tokens)
-            bm25_score_by_id = {docs[i]["doc_id"]: bm25_scores[i] for i in range(len(docs))}
-
-            # 3. 对齐 doc_id 并将距离转为相似度
-            combined = []
-            for doc, vec_distance in vector_results:
-                doc_id = doc.metadata.get("doc_id")
-                if doc_id is None or doc_id not in bm25_score_by_id:
+            bm25_top_idx = np.argsort(-bm25_scores)[:fetch_k]
+            for rank, idx in enumerate(bm25_top_idx, start=1):
+                if bm25_scores[idx] <= 0:
                     continue
-                # 距离转相似度
-                vec_similarity = 1 / (1 + vec_distance)
-                combined.append({
-                    "doc": doc,
-                    "doc_id": doc_id,
-                    "vector_score": vec_similarity,
-                    "bm25_score": bm25_score_by_id[doc_id]
-                })
+                add_ranked_doc(docs[idx]["doc_id"], rank, "bm25")
 
-            if not combined:
+            if not candidates:
                 return []
 
-            # 4. 归一化
-            vec_scores = np.array([c["vector_score"] for c in combined])
-            bm25_scores_arr = np.array([c["bm25_score"] for c in combined])
-            norm_vec = (vec_scores - np.min(vec_scores)) / (np.max(vec_scores) - np.min(vec_scores) + epsilon)
-            norm_bm25 = (bm25_scores_arr - np.min(bm25_scores_arr)) / (np.max(bm25_scores_arr) - np.min(bm25_scores_arr) + epsilon)
-
-            # 5. 加权融合
-            for i, c in enumerate(combined):
-                c["combined_score"] = alpha * norm_vec[i] + (1 - alpha) * norm_bm25[i]
-
-            # 6. 返回 top-k 文档
-            combined.sort(key=lambda x: x["combined_score"], reverse=True)
-            top_docs = [c["doc"] for c in combined[:k]]
+            ranked = sorted(candidates.values(), key=lambda item: item["score"], reverse=True)
+            top_docs: list[Document] = []
+            for item in ranked[:k]:
+                raw_doc = doc_by_id.get(item["doc_id"])
+                if not raw_doc:
+                    continue
+                top_docs.append(
+                    Document(
+                        page_content=raw_doc["text"],
+                        metadata={
+                            **raw_doc["metadata"],
+                            "retrieval_strategy": "rrf_fusion",
+                            "rrf_score": item["score"],
+                            "rrf_channels": ",".join(item["channels"]),
+                        },
+                    )
+                )
             return top_docs
 
         return fusion_invoke
+
+    def get_fusion_rerank_retriever(self, k=None, candidate_k=None):
+        """
+        RRF 粗召回 + DashScope qwen3-rerank 二阶段重排。
+
+        candidate_k 控制进入 reranker 的候选文档数，k 控制最终返回文档数。
+        """
+        k = k or chroma_conf["k"]
+        candidate_k = candidate_k or int(rag_conf.get("reranker_candidate_k", 20))
+        candidate_k = max(candidate_k, k)
+
+        fusion_retriever = self.get_fusion_retriever(k=candidate_k)
+        reranker = DashScopeReranker()
+
+        def fusion_rerank_invoke(query: str):
+            candidate_docs = fusion_retriever(query)
+            return reranker.rerank(query=query, documents=candidate_docs, top_n=k)
+
+        return fusion_rerank_invoke
+
     #### BM25 单独检索 ####
     def bm25_retriever(self):
         all_docs_data = self.vector_store.get(include=["documents", "metadatas"])
         docs = [{"text": doc, "metadata": meta, "doc_id": meta.get("doc_id", f"doc_{i}")}
                 for i, (doc, meta) in enumerate(zip(all_docs_data["documents"], all_docs_data["metadatas"]))]
+
+        if not docs:
+            logger.warning("[bm25 retriever] 向量库中没有可检索文档")
+            return lambda query, k=5: []
 
         tokenized_texts = [list(jieba.cut(d["text"])) for d in docs]
         bm25 = BM25Okapi(tokenized_texts)
@@ -199,9 +267,9 @@ if __name__ == "__main__":
         print("="*20)
 
     # 融合检索
-    fusion_retriever = vs.get_fusion_retriever(alpha=0.7, k=3)
+    fusion_retriever = vs.get_fusion_retriever(k=3)
     fusion_res = fusion_retriever(query)
-    print("\n=== 融合检索结果 ===")
+    print("\n=== RRF 融合检索结果 ===")
     for r in fusion_res:
         print(r.page_content)
         print("="*20)

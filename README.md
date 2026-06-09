@@ -2,7 +2,7 @@
 
 目录名：`zhisaotong-customer-service-agent`
 
-本文档是项目竞争力优化规划，不代表当前所有能力均已完成。当前阶段只整理项目定位、已有能力、改造路线和简历表达，不修改业务代码。
+本文档记录项目当前已完成的竞争力改造、下一步工程化路线和可用于简历/面试的表达。
 
 ## 项目定位
 
@@ -15,17 +15,23 @@
 - Streamlit 聊天入口，项目标题为“智扫通机器人智能客服”。
 - 基于 LangChain `create_agent` 构建 ReAct 风格 Agent。
 - 工具能力包括本地 RAG 检索、互联网搜索、天气查询、用户 ID 获取、月份获取、外部使用记录读取和报告上下文注入。
-- 本地知识库基于 Chroma，已实现向量检索和 BM25 融合检索。
+- 本地知识库基于 Chroma，已实现向量检索、BM25 检索、RRF 融合检索和 DashScope qwen3-rerank 二阶段重排。
+- 已构建 Retriever 与 Generator 双层评测闭环，支持 CSV/Markdown 报告输出和多策略指标对比。
 - 动态网络知识补充链路已存在：Serper 搜索、网页抓取、多线程并发抓取、网页内容切分、临时 Chroma 向量库、相关内容检索和 LLM 总结。
 - Prompt 中已明确约束 `web_search` 在最新信息、品牌对比、本地知识库不足时调用。
 
-## 当前短板
+## 环境安装
 
-- 检索质量缺少系统评测闭环，虽然已有 `rag_eval_dataset.csv`，但还没有形成稳定评测报告。
+```bash
+pip install -r requirements.txt
+```
+
+## 当前短板与下一步重点
+
+- 工具调用仍主要散落在业务函数中，缺少统一的 PreToolUse/PostToolUse 生命周期管控。
 - WebSearch 缺少查询缓存、URL 去重、来源可信度评分、TTL 过期策略和引用输出。
-- 当前融合检索已有 BM25 + 向量，但缺少 RRF、Cross-Encoder 或 Qwen/BGE Reranker 的二阶段重排。
 - 工具仍是项目内 Python 函数，尚未封装成 MCP Server，外部 Agent 客户端复用性不强。
-- 日志有记录，但缺少可观测面板，不能直观看到工具调用、延迟、检索命中和回答质量变化。
+- 日志已有基础记录，但缺少 session_id、tool_call_id、工具耗时、缓存命中、失败归因和指标报表。
 
 ## 改造路线
 
@@ -39,33 +45,70 @@
 - 可审计记忆：参考 `CLAUDE.md` 与自动记忆思想，为项目建立人工维护的 `AGENT.md` 或 `PROJECT_MEMORY.md`，记录产品术语、工具边界、常见失败样例和评测结论。记忆必须是可读 Markdown，避免黑箱化。
 - 背景监控：参考 background monitors 思路，监控日志、WebSearch 失败率、缓存命中率、评测指标变化，并在异常时生成可读报告。
 
-映射到本项目后，优先级建议是：先做 Hook + 评测，再做缓存 + Reranker，最后做 MCP/插件化。这样既能保持项目规模可控，也能把“Agent 工程化”讲清楚。
+映射到本项目后，评测闭环、RRF 融合和 Reranker 已经完成，下一步优先做 Hook 生命周期管控：先把工具调用前后的规则、日志、错误和指标统一起来，再推进 WebSearch 缓存/来源追踪，最后做 MCP/插件化。这样既能保持项目规模可控，也能把“Agent 工程化”讲清楚。
 
-### Phase 1：评测闭环
+### Phase 1：评测驱动的多阶段 RAG 检索优化（已完成）
 
-目标：让项目从“能回答”升级到“能证明回答质量”。
+目标：让项目从“能回答”升级到“能证明回答质量”，并通过指标证明多阶段检索优化确实提升效果。
 
-- 基于现有 `rag_eval_dataset.csv` 构建自动评测脚本。
-- 评估指标：检索 Recall@K、MRR、回答相关性、事实一致性、上下文利用率、工具调用准确率。
-- 输出 CSV/Markdown 评测报告，记录每次改造前后的指标变化。
-- 将评测命令写入 README，方便面试时演示。
+- 重建 `data/rag_eval_dataset.csv` 为 60 条 card-level hard set，覆盖 6 个 txt 知识文件。
+- 将 6 个 txt 知识文件整理为 90 张客服知识卡片，其中 60 张为评测标准卡，30 张为 `*-DIST-*` 近邻干扰卡。
+- 入库时写入 `card_id` metadata，使评测从 source 级升级为 card 级，避免“命中同一文件就算正确”的虚高指标。
+- Retriever 评测支持 `Recall@K`、`MRR`，并自动输出 CSV/Markdown 报告。
+- Generator 评测支持 `Faithfulness`、`Answer Relevance`、`Pass Rate`，默认使用 Qwen 生成、DeepSeek Judge。
+- 检索策略已支持 `vector`、`bm25`、`fusion`、`fusion_rerank`：
+  - `vector`：纯向量检索 baseline。
+  - `bm25`：关键词检索 baseline。
+  - `fusion`：Vector + BM25 的 RRF 融合。
+  - `fusion_rerank`：RRF 粗召回 + DashScope `qwen3-rerank` 二阶段重排。
+
+核心评测命令：
+
+```bash
+python -m rag.retriever_evaluation --top-k 1 --strategies vector,fusion_rerank --skip-load-documents
+python -m rag.retriever_evaluation --top-k 3 --strategies vector,fusion_rerank --skip-load-documents
+python -m rag.generation_evaluation --strategies vector,fusion_rerank --skip-load-documents
+```
+
+全量重建索引评测：
+
+```bash
+python -m rag.retriever_evaluation --reset-index --top-k 1 --strategies vector,bm25,fusion,fusion_rerank
+python -m rag.generation_evaluation --reset-index --strategies vector,fusion_rerank
+```
+
+Generator 评测会调用 LLM 生成答案和 Judge 打分。默认生成模型使用 DashScope/Qwen，需要 `.env` 中配置 `DASHSCOPE_API_KEY`；默认 Judge 使用 DeepSeek，需要配置 `DEEPSEEK_API_KEY` 和 `DEEPSEEK_BASE_URL`。如果 DashScope 默认生成模型额度不足，可通过 `--generator-provider deepseek` 临时切换生成模型。
+
+输出目录：
+
+```text
+outputs/evaluations/
+```
+
+注意：如果本地已经加载过旧版知识库，正式跑评测前应重建 `chroma_db/` 和 `md5.text`，避免旧 chunk 污染新数据指标。
+
+Retriever 评测说明文档：[Phase 1 Retriever Evaluation V1](docs/phase1_retriever_evaluation_v1.md)
+
+生成评测说明文档：[Phase 1 Generator Evaluation V1](docs/phase1_generation_evaluation_v1.md)
 
 可写进简历的成果：
 
-> 构建 RAG 评测闭环，基于业务问答集评估检索召回、回答事实性和工具调用准确率，使系统优化从经验调参转为指标驱动。
+> 构建评测驱动的多阶段 RAG 检索优化链路，基于 60 条业务 hard set 对 Vector、BM25、RRF Fusion 与 qwen3-rerank 进行 Recall@K、MRR、Faithfulness 和 Answer Relevance 评估，使系统优化从经验调参转为指标驱动。
 
-### Phase 2：检索增强
+### Phase 2：Hook 生命周期管控（下一步）
 
-目标：提升知识库问答的稳定性和专业度。
+目标：将当前粗糙日志升级为可审计的工具调用生命周期，让 Agent 每次调用工具都能被记录、复盘和约束。
 
-- 将现有向量 + BM25 融合升级为 RRF 融合。
-- 增加二阶段 Reranker，例如 `BAAI/bge-reranker-v2-m3` 或 `Qwen/Qwen3-Reranker-0.6B`。
-- 尝试 Contextual Retrieval：为 chunk 添加文档标题、章节、产品型号、适用场景等上下文，再进行 embedding 和 BM25 建索引。
-- 保留向量检索、BM25、融合检索、融合 + Reranker 的对比评测。
+- 建立统一 Hook 管理模块，抽象 `before_tool_call`、`after_tool_call`、`on_tool_error` 生命周期。
+- PreToolUse：检查工具是否需要联网、是否命中缓存、是否包含敏感信息、是否允许调用高成本外部 API。
+- PostToolUse：记录 `session_id`、`tool_call_id`、工具名、输入摘要、输出摘要、耗时、成功/失败状态。
+- Error Hook：统一捕获异常、错误类型、重试建议和降级策略，避免工具失败直接污染最终回答。
+- 为 RAG/WebSearch/天气/报告工具统一接入 Hook，输出结构化 JSONL 日志。
+- 后续基于 Hook 日志生成工具调用统计、延迟统计、失败分布和缓存命中率报表。
 
 可写进简历的成果：
 
-> 设计 Hybrid Retrieval + RRF + Reranker 二阶段检索链路，并通过离线评测对比向量检索、BM25 与融合检索效果。
+> 参考 Claude Code Hook 生命周期设计，为客服 Agent 构建工具调用审计链路，在工具调用前后记录权限、缓存、耗时、错误和输出摘要，提升 Agent 可观测性与生产可控性。
 
 ### Phase 3：动态网络知识补充强化
 

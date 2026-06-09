@@ -1,2 +1,6 @@
-chat_model_name: qwen3-max
+chat_model_name: qwen3.6-plus
 embedding_model_name: text-embedding-v4
+reranker_model_name: qwen3-rerank
+reranker_candidate_k: 20
+reranker_timeout_seconds: 30
+reranker_instruction: Given a customer-service question, retrieve relevant product-support passages that answer the question.

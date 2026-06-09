@@ -32,9 +32,12 @@ def get_weather(city: str) -> str:
     AMAP_KEY = agent_conf.get("amap_key")
     if not AMAP_KEY:
         return f"未配置高德地图Key，无法获取天气。默认返回虚拟天气: 城市{city}天气为晴天，气温26摄氏度"
+    AMAP_WEATHER_API_URL = agent_conf.get("amap_weather_api_url")
+    if not AMAP_WEATHER_API_URL:
+        return f"未配置高德地图天气API地址，无法获取天气。默认返回虚拟天气: 城市{city}天气为晴天，气温26摄氏度"
 
     try:
-        url = f"https://restapi.amap.com/v3/weather/weatherInfo?city={city}&key={AMAP_KEY}&extensions=base"
+        url = f"{AMAP_WEATHER_API_URL}?city={city}&key={AMAP_KEY}&extensions=base"
         resp = requests.get(url, timeout=5).json()
         if resp.get("status") != "1":
             logger.warning(f"[get_weather] 高德API返回失败: {resp}")

@@ -10,7 +10,10 @@ class SerperClient:
     """
     def __init__(self):
         # 从统一配置中读取 API Key
-        self.url = websearch_conf.get("serper_api_url", "https://google.serper.dev/search")
+        self.url = websearch_conf.get("serper_api_url", None)
+        if not self.url:
+            raise ValueError("[SerperClient] 配置文件中缺少 serper_api_url")
+
         api_key = websearch_conf.get("serper_api_key", None)
         if not api_key:
             raise ValueError("[SerperClient] 配置文件中缺少 serper_api_key")

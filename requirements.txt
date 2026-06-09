@@ -1,0 +1,31 @@
+# App UI
+streamlit
+
+# LangChain / Agent / RAG
+langchain
+langchain-core
+langchain-community
+langchain-chroma
+langchain-openai
+langchain-text-splitters
+langgraph
+
+# Models and embeddings
+dashscope
+
+# Vector store and retrieval
+chromadb
+rank-bm25
+jieba
+numpy
+
+# Document loading
+pypdf
+
+# Web search and crawling
+requests
+beautifulsoup4
+lxml
+
+# Config
+PyYAML

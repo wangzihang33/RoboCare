@@ -13,7 +13,7 @@ def print_prompt(full_prompt):
 class RagSummarizeservice(object):
     def __init__(self):
         self.vector_service = VectorStoreService()
-        self.retriever = self.vector_service.get_fusion_retriever(alpha=0.7, k=3)
+        self.retriever = self.vector_service.get_fusion_retriever(k=3)
         self.prompt_text = load_rag_prompts()
         self.prompt_template = PromptTemplate.from_template(self.prompt_text)
         self.model = chat_model
