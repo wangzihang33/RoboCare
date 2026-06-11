@@ -4,9 +4,12 @@ from langchain.agents import AgentState
 from langchain.agents.middleware import wrap_tool_call, before_model, dynamic_prompt, ModelRequest
 from langgraph.types import Command
 from langchain_core.messages import ToolMessage
+from agent.hooks.lifecycle import ToolHookManager
 from utils.logger_handler import logger
 from utils.prompt_loader import load_report_prompts, load_system_prompts
 from langgraph.runtime import Runtime
+
+tool_hook_manager = ToolHookManager()
 
 
 @wrap_tool_call
@@ -14,21 +17,47 @@ def monitor_tool(
     request: ToolCallRequest,
     handler: Callable[[ToolCallRequest], ToolMessage | Command],
 ) -> ToolMessage | Command:
-    logger.info(f"工具执行：{request.tool_call['name']}")
-    logger.info(f"工具参数：{request.tool_call['args']}")
+    tool_name = request.tool_call["name"]
+    tool_args = request.tool_call.get("args", {})
+    tool_call_id = request.tool_call.get("id")
+    hook_context = tool_hook_manager.before_tool_call(
+        tool_name=tool_name,
+        args=tool_args,
+        tool_call_id=tool_call_id,
+        runtime_context=request.runtime.context,
+    )
+
+    logger.info(f"工具执行：{tool_name}")
+    logger.info(f"工具参数：{tool_args}")
+
+    if not hook_context.decision.allowed:
+        blocked_message = tool_hook_manager.blocked_message(hook_context.decision)
+        logger.warning(f"[tool hook]工具{tool_name}调用被拦截：{hook_context.decision.reason}")
+        return ToolMessage(
+            content=blocked_message,
+            tool_call_id=hook_context.tool_call_id,
+            name=tool_name,
+            status="error",
+        )
 
     try:
         result = handler(request)
-        logger.info(f"[tool monitor]工具{request.tool_call['name']}调用成功")
+        tool_hook_manager.after_tool_call(hook_context, result)
+        logger.info(f"[tool monitor]工具{tool_name}调用成功")
 
-        if request.tool_call["name"] == "fill_context_for_report":
+        if tool_name == "fill_context_for_report":
             request.runtime.context["is_report"] = True
 
-        
         return result
     except Exception as e:
-        logger.error(f"[tool monitor]工具{request.tool_call['name']}调用失败：{str(e)}")
-        raise e
+        fallback_message = tool_hook_manager.on_tool_error(hook_context, e)
+        logger.error(f"[tool monitor]工具{tool_name}调用失败：{str(e)}")
+        return ToolMessage(
+            content=fallback_message,
+            tool_call_id=hook_context.tool_call_id,
+            name=tool_name,
+            status="error",
+        )
 
 
 @before_model
