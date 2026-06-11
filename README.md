@@ -31,8 +31,8 @@ pip install -r requirements.txt
 
 - Phase 1 已完成：评测驱动的多阶段 RAG 检索优化，形成 `vector`、`bm25`、`fusion`、`fusion_rerank` 的可量化对比。
 - Phase 2 已完成：工具调用生命周期 Hook 管控 V1，形成工具调用前拦截、调用后审计、异常兜底和日志统计闭环。
-- 下一步重点是 Phase 3：将现有 WebSearch 从“能联网搜索”升级为“可缓存、可去重、可追溯、可引用”的动态 Web RAG。
-- 后续再推进 MCP 工具化与可视化观测页，使项目从本地 Agent Demo 进一步接近标准化工具服务。
+- Phase 3 已完成：将现有 WebSearch 从“能联网搜索”升级为“可缓存、可去重、可追溯、可引用”的动态 Web RAG。
+- 下一步重点是 Phase 4 MCP 工具化与 Phase 5 可视化观测页，使项目从本地 Agent Demo 进一步接近标准化工具服务。
 
 ## 改造路线
 
@@ -46,7 +46,7 @@ pip install -r requirements.txt
 - 可审计记忆：参考 `CLAUDE.md` 与自动记忆思想，为项目建立人工维护的 `AGENT.md` 或 `PROJECT_MEMORY.md`，记录产品术语、工具边界、常见失败样例和评测结论。记忆必须是可读 Markdown，避免黑箱化。
 - 背景监控：参考 background monitors 思路，监控日志、WebSearch 失败率、缓存命中率、评测指标变化，并在异常时生成可读报告。
 
-映射到本项目后，评测闭环、RRF 融合、Reranker 和 Hook 生命周期管控 V1 已经完成。下一步优先推进 WebSearch 缓存、URL 去重、来源追踪和引用输出，再推进 MCP/插件化。这样既能保持项目规模可控，也能把“Agent 工程化”主线讲清楚。
+映射到本项目后，评测闭环、RRF 融合、Reranker、Hook 生命周期管控 V1 和动态 Web RAG 强化 V1 已经完成。下一步优先推进 MCP/插件化和可视化观测页。这样既能保持项目规模可控，也能把“Agent 工程化”主线讲清楚。
 
 ### Phase 1：评测驱动的多阶段 RAG 检索优化（已完成）
 
@@ -126,16 +126,18 @@ Hook 说明文档：[Phase 2 Hook Lifecycle V1](docs/phase2_hook_lifecycle_v1.md
 
 > 构建 Agent 工具调用生命周期 Hook 管控层，基于 LangChain middleware 统一实现工具调用前策略拦截、调用后结构化审计、异常兜底与敏感信息治理，提升客服 Agent 的可观测性、安全性和工程化可复盘能力。
 
-### Phase 3：动态网络知识补充强化（下一步）
+### Phase 3：动态网络知识补充强化（V1 已完成）
 
 目标：让 WebSearch 从“能搜”升级为“可控、可追溯、低成本”。
 
-- 为 `web_search(query)` 增加缓存：`query + top_k + date_bucket` 生成 hash key，缓存搜索结果和网页摘要。
-- 增加 TTL 策略：市场信息类短缓存，通用知识类长缓存。
-- URL 去重，过滤 PDF、低质量页面、重复域名。
-- 为返回结果附带来源 URL、网页标题、抓取时间和摘要。
-- 对外部网页内容构建临时向量库时记录检索来源，最终回答中输出引用。
-- 将缓存命中率、外部搜索耗时和失败原因接入 Hook 日志统计。
+- 已为 `web_search(query)` 增加本地 JSON 缓存：基于 `query + top_k + date_bucket + cache_version` 生成 hash key，缓存最终回答、引用来源和 trace。
+- 已增加 TTL 策略：市场、价格、排行、品牌对比类短缓存，故障、维护、使用指导类长缓存。
+- 已实现 URL 标准化、追踪参数清理、PDF/图片等非网页资源过滤、重复 URL 去重和同域名限流。
+- 已将 Serper 搜索结果结构化为 `SearchResult`，并将网页抓取结果结构化为 `FetchedPage`。
+- 已对外部网页内容构建临时向量库时记录来源 metadata，最终回答稳定追加参考来源列表。
+- 已将缓存命中率、来源数量、过滤后 URL 数、抓取成功数和失败数接入 Hook 日志统计。
+
+WebSearch 说明文档：[Phase 3 WebSearch V1](docs/phase3_websearch_v1.md)
 
 可写进简历的成果：
 

@@ -33,23 +33,57 @@ def summarize_events(events: list[dict]) -> list[dict]:
     for tool_name, items in sorted(grouped.items()):
         after_events = [item for item in items if item.get("stage") == "after_tool_call"]
         error_events = [item for item in items if item.get("stage") == "on_tool_error"]
+        trace_events = [item for item in items if item.get("stage") == "websearch_trace"]
         blocked_events = [item for item in items if item.get("status") == "blocked"]
         latencies = [
             float(item["latency_ms"])
             for item in after_events + error_events
             if item.get("latency_ms") is not None
         ]
-        rows.append(
-            {
-                "tool_name": tool_name,
-                "calls": len(after_events) + len(error_events),
-                "success": len(after_events),
-                "errors": len(error_events),
-                "blocked": len(blocked_events),
-                "avg_latency_ms": round(mean(latencies), 3) if latencies else 0.0,
-            }
-        )
+        row = {
+            "tool_name": tool_name,
+            "calls": len(after_events) + len(error_events),
+            "success": len(after_events),
+            "errors": len(error_events),
+            "blocked": len(blocked_events),
+            "avg_latency_ms": round(mean(latencies), 3) if latencies else 0.0,
+        }
+        if trace_events:
+            row.update(summarize_websearch_trace(trace_events))
+        rows.append(row)
     return rows
+
+
+def summarize_websearch_trace(trace_events: list[dict]) -> dict:
+    cache_hits = [event for event in trace_events if event.get("cache_hit")]
+    source_counts = [
+        int(event["source_count"])
+        for event in trace_events
+        if event.get("source_count") is not None
+    ]
+    urls_after_filter = [
+        int(event["urls_after_filter"])
+        for event in trace_events
+        if event.get("urls_after_filter") is not None
+    ]
+    fetch_success_counts = []
+    fetch_error_counts = []
+    for event in trace_events:
+        fetch_stats = event.get("fetch_stats") or {}
+        if fetch_stats.get("success_count") is not None:
+            fetch_success_counts.append(int(fetch_stats["success_count"]))
+        if fetch_stats.get("error_count") is not None:
+            fetch_error_counts.append(int(fetch_stats["error_count"]))
+
+    return {
+        "websearch_trace_events": len(trace_events),
+        "cache_hits": len(cache_hits),
+        "cache_hit_rate": round(len(cache_hits) / len(trace_events), 4) if trace_events else 0.0,
+        "avg_source_count": round(mean(source_counts), 3) if source_counts else 0.0,
+        "avg_urls_after_filter": round(mean(urls_after_filter), 3) if urls_after_filter else 0.0,
+        "avg_fetch_success": round(mean(fetch_success_counts), 3) if fetch_success_counts else 0.0,
+        "avg_fetch_errors": round(mean(fetch_error_counts), 3) if fetch_error_counts else 0.0,
+    }
 
 
 def main() -> None:

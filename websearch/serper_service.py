@@ -3,6 +3,8 @@ import re
 import json
 from utils.config_handler import websearch_conf
 from utils.logger_handler import logger
+from websearch.models import SearchResult
+from websearch.source_filter import filter_search_results
 
 class SerperClient:
     """
@@ -59,25 +61,36 @@ class SerperClient:
         """
         从 Serper API 响应中提取标题、链接、摘要等信息
         """
-        titles, links, snippets = [], [], []
-
-        for item in serper_response.get("organic", []):
-            titles.append(item.get("title", ""))
-            links.append(item.get("link", ""))
-            snippets.append(item.get("snippet", ""))
+        raw_results = [
+            SearchResult(
+                title=item.get("title", ""),
+                url=item.get("link", ""),
+                snippet=item.get("snippet", ""),
+                rank=index,
+            )
+            for index, item in enumerate(serper_response.get("organic", []), 1)
+        ]
+        filtered_results, filter_stats = filter_search_results(raw_results)
 
         query = serper_response.get("searchParameters", {}).get("q", "")
-        count = len(links)
+        count = len(filtered_results)
         language = "zh-cn" if SerperClient._contains_chinese(query) else "en-us"
 
         output_dict = {
             "query": query,
             "language": language,
             "count": count,
-            "titles": titles,
-            "links": links,
-            "snippets": snippets
+            "original_count": len(raw_results),
+            "filter_stats": filter_stats.to_dict(),
+            "results": [result.to_dict() for result in filtered_results],
+            "titles": [result.title for result in filtered_results],
+            "links": [result.url for result in filtered_results],
+            "snippets": [result.snippet for result in filtered_results],
         }
+        logger.info(
+            "[SerperClient] filtered search results: "
+            f"{filter_stats.kept_count}/{filter_stats.original_count}"
+        )
         return output_dict
 
 

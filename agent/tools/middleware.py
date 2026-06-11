@@ -1,13 +1,16 @@
 from typing import Callable
-from langchain.tools.tool_node import ToolCallRequest
+
 from langchain.agents import AgentState
-from langchain.agents.middleware import wrap_tool_call, before_model, dynamic_prompt, ModelRequest
-from langgraph.types import Command
+from langchain.agents.middleware import ModelRequest, before_model, dynamic_prompt, wrap_tool_call
+from langchain.tools.tool_node import ToolCallRequest
 from langchain_core.messages import ToolMessage
+from langgraph.runtime import Runtime
+from langgraph.types import Command
+
 from agent.hooks.lifecycle import ToolHookManager
 from utils.logger_handler import logger
 from utils.prompt_loader import load_report_prompts, load_system_prompts
-from langgraph.runtime import Runtime
+
 
 tool_hook_manager = ToolHookManager()
 
@@ -27,12 +30,11 @@ def monitor_tool(
         runtime_context=request.runtime.context,
     )
 
-    logger.info(f"工具执行：{tool_name}")
-    logger.info(f"工具参数：{tool_args}")
+    logger.info(f"[tool monitor] start tool={tool_name}, args={tool_args}")
 
     if not hook_context.decision.allowed:
         blocked_message = tool_hook_manager.blocked_message(hook_context.decision)
-        logger.warning(f"[tool hook]工具{tool_name}调用被拦截：{hook_context.decision.reason}")
+        logger.warning(f"[tool hook] blocked tool={tool_name}: {hook_context.decision.reason}")
         return ToolMessage(
             content=blocked_message,
             tool_call_id=hook_context.tool_call_id,
@@ -43,7 +45,8 @@ def monitor_tool(
     try:
         result = handler(request)
         tool_hook_manager.after_tool_call(hook_context, result)
-        logger.info(f"[tool monitor]工具{tool_name}调用成功")
+        tool_hook_manager.record_tool_trace(hook_context, _extract_tool_trace(tool_name))
+        logger.info(f"[tool monitor] success tool={tool_name}")
 
         if tool_name == "fill_context_for_report":
             request.runtime.context["is_report"] = True
@@ -51,7 +54,7 @@ def monitor_tool(
         return result
     except Exception as e:
         fallback_message = tool_hook_manager.on_tool_error(hook_context, e)
-        logger.error(f"[tool monitor]工具{tool_name}调用失败：{str(e)}")
+        logger.error(f"[tool monitor] failed tool={tool_name}: {str(e)}")
         return ToolMessage(
             content=fallback_message,
             tool_call_id=hook_context.tool_call_id,
@@ -60,13 +63,29 @@ def monitor_tool(
         )
 
 
+def _extract_tool_trace(tool_name: str) -> dict:
+    if tool_name != "web_search":
+        return {}
+
+    try:
+        from agent.tools.agent_tools import web
+
+        return dict(getattr(web, "last_trace", {}) or {})
+    except Exception as exc:
+        logger.warning(f"[tool hook] failed to extract web_search trace: {exc}")
+        return {}
+
+
 @before_model
 def log_before_model(
     state: AgentState,
     runtime: Runtime,
 ):
-    logger.info(f"[before model]模型即将调用，并附带{len(state['messages'])}消息")
-    logger.debug(f"[before model]消息内容：{type(state['messages'][-1]).__name__} | {state['messages'][-1].content}")
+    logger.info(f"[before model] calling model with {len(state['messages'])} messages")
+    logger.debug(
+        "[before model] last message: "
+        f"{type(state['messages'][-1]).__name__} | {state['messages'][-1].content}"
+    )
 
     return None
 

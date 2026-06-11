@@ -77,6 +77,20 @@ class ToolHookManager:
             }
         )
 
+    def record_tool_trace(self, context: ToolCallContext, trace: dict[str, Any]) -> None:
+        if not trace:
+            return
+
+        write_hook_event(
+            {
+                "stage": "websearch_trace",
+                "session_id": context.session_id,
+                "tool_call_id": context.tool_call_id,
+                "tool_name": context.tool_name,
+                **trace,
+            }
+        )
+
     def on_tool_error(self, context: ToolCallContext, error: Exception) -> str:
         message = self.safe_error_message(context.tool_name)
         write_hook_event(
