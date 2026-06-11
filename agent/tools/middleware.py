@@ -68,9 +68,9 @@ def _extract_tool_trace(tool_name: str) -> dict:
         return {}
 
     try:
-        from agent.tools.agent_tools import web
+        from agent.tools.core_tools import get_web_search_trace
 
-        return dict(getattr(web, "last_trace", {}) or {})
+        return get_web_search_trace()
     except Exception as exc:
         logger.warning(f"[tool hook] failed to extract web_search trace: {exc}")
         return {}

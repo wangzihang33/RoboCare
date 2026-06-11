@@ -4,3 +4,6 @@ __pycache__/
 logs/
 chroma_db/
 cache/
+data/external/*.db
+data/external/*.db-shm
+data/external/*.db-wal

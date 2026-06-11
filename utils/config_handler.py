@@ -51,6 +51,8 @@ def load_agent_config(config_path: str=get_abs_path("config/agent.yml"), encodin
     return apply_env_overrides(config, {
         "amap_key": "AMAP_KEY",
         "amap_weather_api_url": "AMAP_WEATHER_API_URL",
+        "external_data_db_path": "USER_USAGE_DB_PATH",
+        "external_data_path": "USER_USAGE_SEED_CSV_PATH",
     })
     
 def load_websearch_config(config_path: str = get_abs_path("config/websearch.yml"), encoding: str = "utf-8"):

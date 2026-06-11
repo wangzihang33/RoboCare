@@ -31,22 +31,23 @@ pip install -r requirements.txt
 
 - Phase 1 已完成：评测驱动的多阶段 RAG 检索优化，形成 `vector`、`bm25`、`fusion`、`fusion_rerank` 的可量化对比。
 - Phase 2 已完成：工具调用生命周期 Hook 管控 V1，形成工具调用前拦截、调用后审计、异常兜底和日志统计闭环。
-- Phase 3 已完成：将现有 WebSearch 从“能联网搜索”升级为“可缓存、可去重、可追溯、可引用”的动态 Web RAG。
-- 下一步重点是 Phase 4 MCP 工具化与 Phase 5 可视化观测页，使项目从本地 Agent Demo 进一步接近标准化工具服务。
+- Phase 3 已完成：动态 Web RAG V1，形成 TTL 缓存、URL 治理、来源追踪、引用输出和 Hook 指标统计闭环。
+- Phase 4 已完成：工具服务层标准化 V1，完成核心工具解耦、SQLite 用户数据接入、真实天气错误处理和随机工具清理。
+- 项目已形成 4 个可用于简历和面试展开的核心竞争点：评测驱动 RAG 优化、Hook 生命周期治理、动态 Web RAG、工具服务层标准化。
 
 ## 改造路线
 
 ## Claude Code 公开设计可借鉴点
 
-以下内容只参考 Anthropic 官方公开仓库和公开文档，不参考任何非授权泄露材料。Claude Code 公开资料中最值得借鉴的是产品化 Agent 的组织方式：插件化能力包、子 Agent 上下文隔离、Hook 生命周期管控、可审计记忆和 MCP 工具生态。
+以下内容只参考 Anthropic 官方公开仓库和公开文档，不参考任何非授权泄露材料。Claude Code 公开资料中最值得借鉴的是产品化 Agent 的组织方式：插件化能力包、子 Agent 上下文隔离、Hook 生命周期管控、可审计记忆和标准化工具治理。
 
-- 插件化能力包：参考 Claude Code plugins 的结构，将客服能力拆成可组合模块，例如 `rag-search`、`web-freshness`、`user-report`、`weather-advisor` 和 `source-auditor`。短期可以先在项目内按模块组织，后期再封装成可复用插件或 MCP 工具包。
+- 插件化能力包：参考 Claude Code plugins 的结构，将客服能力拆成可组合模块，例如 `rag-search`、`web-freshness`、`user-report`、`weather-advisor` 和 `source-auditor`。短期可以先在项目内按模块组织，后期再视真实复用需求封装成可复用插件或外部工具服务。
 - Hook 生命周期管控：参考 PreToolUse/PostToolUse 思路，在工具调用前后增加规则。调用前检查是否真的需要联网、是否包含敏感用户信息、是否访问用户数据、是否属于高成本外部调用；调用后记录耗时、错误、输入输出摘要和工具调用状态。
 - 子 Agent 上下文隔离：将“本地知识库回答”“动态联网补充”“报告生成”“事实来源审查”拆成专职子 Agent，主 Agent 只做意图识别和路由，避免一个上下文里混入过多任务细节。
 - 可审计记忆：参考 `CLAUDE.md` 与自动记忆思想，为项目建立人工维护的 `AGENT.md` 或 `PROJECT_MEMORY.md`，记录产品术语、工具边界、常见失败样例和评测结论。记忆必须是可读 Markdown，避免黑箱化。
 - 背景监控：参考 background monitors 思路，监控日志、WebSearch 失败率、缓存命中率、评测指标变化，并在异常时生成可读报告。
 
-映射到本项目后，评测闭环、RRF 融合、Reranker、Hook 生命周期管控 V1 和动态 Web RAG 强化 V1 已经完成。下一步优先推进 MCP/插件化和可视化观测页。这样既能保持项目规模可控，也能把“Agent 工程化”主线讲清楚。
+映射到本项目后，评测闭环、RRF 融合、Reranker、Hook 生命周期管控 V1、动态 Web RAG 强化 V1 和工具服务层标准化 V1 已经完成。这样既能保持项目规模可控，也能把“Agent 工程化”主线讲清楚。
 
 ### Phase 1：评测驱动的多阶段 RAG 检索优化（已完成）
 
@@ -128,10 +129,10 @@ Hook 说明文档：[Phase 2 Hook Lifecycle V1](docs/phase2_hook_lifecycle_v1.md
 
 ### Phase 3：动态网络知识补充强化（V1 已完成）
 
-目标：让 WebSearch 从“能搜”升级为“可控、可追溯、低成本”。
+目标：构建可控、可追溯、低成本的动态 Web RAG 链路。
 
-- 已为 `web_search(query)` 增加本地 JSON 缓存：基于 `query + top_k + date_bucket + cache_version` 生成 hash key，缓存最终回答、引用来源和 trace。
-- 已增加 TTL 策略：市场、价格、排行、品牌对比类短缓存，故障、维护、使用指导类长缓存。
+- 已为 `web_search(query)` 配置本地 JSON 缓存：基于 `query + top_k + date_bucket + cache_version` 生成 hash key，缓存最终回答、引用来源和 trace。
+- 已设计 TTL 策略：市场、价格、排行、品牌对比类短缓存，故障、维护、使用指导类长缓存。
 - 已实现 URL 标准化、追踪参数清理、PDF/图片等非网页资源过滤、重复 URL 去重和同域名限流。
 - 已将 Serper 搜索结果结构化为 `SearchResult`，并将网页抓取结果结构化为 `FetchedPage`。
 - 已对外部网页内容构建临时向量库时记录来源 metadata，最终回答稳定追加参考来源列表。
@@ -141,28 +142,31 @@ WebSearch 说明文档：[Phase 3 WebSearch V1](docs/phase3_websearch_v1.md)
 
 可写进简历的成果：
 
-> 集成 Serper 与多线程网页抓取，构建带缓存、去重和来源追踪的动态 Web RAG，补充本地知识库缺失的最新产品对比信息。
+> 构建动态 Web RAG 证据链，基于 TTL 缓存、URL 去重过滤、网页来源 metadata 追踪、引用输出和 Hook 指标统计，实现可追溯、低成本、可观测的联网知识补充链路。
 
-### Phase 4：MCP 工具化
+### Phase 4：工具服务层标准化（V1 已完成）
 
-目标：把项目内工具升级为标准 Agent 工具服务。
+目标：把项目内工具整理为可维护、可测试、可审计的 LangChain 工具服务层。
 
-- 将 `rag_summarize`、`web_search`、`get_weather`、`fetch_external_data` 封装成 MCP tools。
-- 暴露资源：产品知识库摘要、用户报告字段说明、工具调用规范。
-- 支持外部 MCP Client 或其他 Agent 复用这些工具。
-- 为工具添加输入校验、错误结构化返回和调用日志。
+- 已将 `rag_summarize`、`web_search`、`get_weather`、`fetch_external_data` 的核心逻辑下沉到 `core_tools.py`。
+- 已保留 LangChain `@tool` 注册方式，由 `agent_tools.py` 负责薄包装和文本适配。
+- 已为核心工具添加输入校验、统一结构化返回和 Hook 调用日志。
+- 已将 `fetch_external_data` 从 CSV 内存字典改为 SQLite 用户设备数据访问层。
+- 已移除随机 `get_user_id`、`get_current_month`、`get_user_location` 工具；`get_weather` 必须显式传入城市，`fill_context_for_report` 保留为 Agent 内部流程工具。
+- 已将天气工具从“失败时返回虚拟天气”改为真实接口查询和结构化错误返回。
+
+工具层验证命令：
+
+```bash
+python -m py_compile agent/tools/core_tools.py agent/tools/user_data_store.py agent/tools/tool_result.py agent/tools/agent_tools.py agent/tools/middleware.py agent/react_agent.py
+python -c "from agent.tools.core_tools import fetch_external_data_core; print(fetch_external_data_core('1001', '2025-01'))"
+```
+
+工具服务层说明文档：[Phase 4 Tool Service Layer V1](docs/phase4_tool_service_v1.md)
 
 可写进简历的成果：
 
-> 将客服 Agent 工具封装为 MCP Server，实现 RAG、WebSearch、天气和用户报告工具的标准化注册与跨 Agent 复用。
-
-### Phase 5：可观测与演示
-
-目标：让项目更像生产级应用，而不是课堂 Demo。
-
-- 记录每轮对话的工具调用链、耗时、检索命中文档、来源 URL 和最终回答。
-- 基于 Hook JSONL 日志增加简单管理页或报告页，展示工具调用次数、失败率、拦截次数、平均延迟、缓存命中率和 RAG 命中率。
-- 增加典型 demo case：售前选购、故障排查、天气适配、品牌对比、个人报告生成。
+> 重构 Agent 工具服务层，将 RAG、动态 Web RAG、真实天气查询和用户设备数据查询统一封装为可校验、可审计、可测试的 LangChain 工具，并将用户报告数据接入 SQLite，移除随机虚拟工具，提升系统工程可信度和业务可复盘能力。
 
 ## 建议后的简历项目标题
 

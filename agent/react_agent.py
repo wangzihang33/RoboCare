@@ -2,8 +2,13 @@ from langchain.agents import create_agent
 from model.factory import chat_model
 from utils.prompt_loader import load_system_prompts
 from agent.tools.middleware import log_before_model, monitor_tool, report_prompt_switch
-from agent.tools.agent_tools import rag_summarize, get_current_month, get_user_id, get_user_location, get_weather, \
-    fetch_external_data, fill_context_for_report, web_search
+from agent.tools.agent_tools import (
+    fetch_external_data,
+    fill_context_for_report,
+    get_weather,
+    rag_summarize,
+    web_search,
+)
 
 
 
@@ -12,7 +17,13 @@ class ReactAgent:
         self.agent = create_agent(
             model=chat_model,
             system_prompt=load_system_prompts(),
-            tools=[rag_summarize, get_current_month, get_user_id, get_user_location, get_weather, fetch_external_data, fill_context_for_report, web_search],
+            tools=[
+                rag_summarize,
+                get_weather,
+                fetch_external_data,
+                fill_context_for_report,
+                web_search,
+            ],
             middleware=[log_before_model, monitor_tool, report_prompt_switch]
         )
 

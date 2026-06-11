@@ -1,6 +1,6 @@
 # Phase 1 Retriever Evaluation V1 说明文档
 
-版本目标：让项目从“能回答”升级到“能证明检索质量”。本版本先建立稳定、可重复运行、可落盘的 Retriever 评测基线，并将融合检索升级为 RRF，为后续 Reranker、WebSearch 缓存、Tracing 和 MCP 工具化提供可对比指标。
+版本目标：让项目从“能回答”升级到“能证明检索质量”。本版本先建立稳定、可重复运行、可落盘的 Retriever 评测基线，并将融合检索升级为 RRF，为后续 Reranker、WebSearch 缓存、Tracing 和工具服务层优化提供可对比指标。
 
 ## 本版本实现了什么
 

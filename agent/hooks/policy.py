@@ -32,9 +32,6 @@ TOOL_POLICIES: dict[str, ToolPolicy] = {
     "rag_summarize": ToolPolicy(tool_type="local_rag", risk_level="low", high_cost=True),
     "web_search": ToolPolicy(tool_type="web_search", risk_level="medium", requires_network=True, high_cost=True),
     "get_weather": ToolPolicy(tool_type="weather", risk_level="low", requires_network=True),
-    "get_user_location": ToolPolicy(tool_type="user_context", risk_level="low"),
-    "get_user_id": ToolPolicy(tool_type="user_context", risk_level="low"),
-    "get_current_month": ToolPolicy(tool_type="system_context", risk_level="low"),
     "fetch_external_data": ToolPolicy(
         tool_type="user_data",
         risk_level="high",
