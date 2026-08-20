@@ -2,3 +2,8 @@ external_data_path: data/external/records.csv
 external_data_db_path: data/external/user_usage.db
 amap_key: ""   # 从 .env 的 AMAP_KEY 注入
 amap_weather_api_url: ""   # 从 .env 的 AMAP_WEATHER_API_URL 注入
+router_llm_enabled: false # only classify rule conflicts and unmatched queries when enabled
+router_model_name: ""     # optional small routing model; leave empty when disabled
+router_provider: deepseek
+router_api_key_env: ROUTER_DEEPSEEK_API_KEY
+router_base_url: https://api.deepseek.com

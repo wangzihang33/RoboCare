@@ -48,13 +48,22 @@ def load_prompts_config(config_path: str=get_abs_path("config/prompts.yml"), enc
 def load_agent_config(config_path: str=get_abs_path("config/agent.yml"), encoding: str="utf-8"):
     with open(config_path, "r", encoding=encoding) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
-    return apply_env_overrides(config, {
+    config = apply_env_overrides(config, {
         "amap_key": "AMAP_KEY",
         "amap_weather_api_url": "AMAP_WEATHER_API_URL",
         "external_data_db_path": "USER_USAGE_DB_PATH",
         "external_data_path": "USER_USAGE_SEED_CSV_PATH",
+        "router_llm_enabled": "ROUTER_LLM_ENABLED",
+        "router_model_name": "ROUTER_MODEL_NAME",
+        "router_provider": "ROUTER_PROVIDER",
+        "router_api_key_env": "ROUTER_API_KEY_ENV",
+        "router_base_url": "ROUTER_BASE_URL",
     })
-    
+    enabled = config.get("router_llm_enabled", False)
+    if isinstance(enabled, str):
+        config["router_llm_enabled"] = enabled.strip().lower() in {"1", "true", "yes", "on"}
+    return config
+
 def load_websearch_config(config_path: str = get_abs_path("config/websearch.yml"), encoding: str = "utf-8"):
     with open(config_path, "r", encoding=encoding) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)

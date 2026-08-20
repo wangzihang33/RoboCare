@@ -25,12 +25,45 @@ class BaseModelFactory(ABC):
 
 class ChatModelFactory(BaseModelFactory):
     def generator(self) -> Optional[Embeddings | BaseChatModel]:
-        return ChatOpenAI(
-            model=rag_conf["chat_model_name"],
-            api_key=get_dashscope_api_key(),
-            base_url=os.getenv("DASHSCOPE_BASE_URL", DEFAULT_DASHSCOPE_BASE_URL),
-            temperature=0,
+        return build_chat_model(
+            model_name=rag_conf.get("chat_model_name"),
+            provider=str(rag_conf.get("chat_model_provider", "dashscope")),
+            api_key_env=rag_conf.get("chat_model_api_key_env") or None,
+            base_url=rag_conf.get("chat_model_base_url") or None,
         )
+
+
+def build_chat_model(
+    model_name: str | None = None,
+    *,
+    provider: str = "dashscope",
+    api_key_env: str | None = None,
+    base_url: str | None = None,
+) -> ChatOpenAI:
+    normalized_provider = provider.strip().lower()
+    if normalized_provider == "deepseek":
+        key_env = api_key_env or "DEEPSEEK_API_KEY"
+        api_key = os.getenv(key_env)
+        if not api_key:
+            raise ValueError(f"缺少 {key_env}，无法初始化 DeepSeek 模型")
+        resolved_base_url = base_url or os.getenv(
+            "DEEPSEEK_BASE_URL", "https://api.deepseek.com"
+        )
+        resolved_model_name = model_name or "deepseek-chat"
+    else:
+        key_env = api_key_env or "DASHSCOPE_API_KEY"
+        api_key = os.getenv(key_env) or get_dashscope_api_key()
+        resolved_base_url = base_url or os.getenv(
+            "DASHSCOPE_BASE_URL", DEFAULT_DASHSCOPE_BASE_URL
+        )
+        resolved_model_name = model_name or rag_conf["chat_model_name"]
+
+    return ChatOpenAI(
+        model=resolved_model_name,
+        api_key=api_key,
+        base_url=resolved_base_url,
+        temperature=0,
+    )
     
 
 class EmbeddingModelFactory(BaseModelFactory):

@@ -8,6 +8,7 @@ from langgraph.runtime import Runtime
 from langgraph.types import Command
 
 from agent.hooks.lifecycle import ToolHookManager
+from agent.routing import RouteDecision, apply_route_guidance
 from utils.logger_handler import logger
 from utils.prompt_loader import load_report_prompts, load_system_prompts
 
@@ -93,6 +94,8 @@ def log_before_model(
 @dynamic_prompt
 def report_prompt_switch(Request: ModelRequest):
     is_report = Request.runtime.context.get("is_report", False)
-    if is_report:
-        return load_report_prompts()
-    return load_system_prompts()
+    base_prompt = load_report_prompts() if is_report else load_system_prompts()
+    route_decision = Request.runtime.context.get("route_decision")
+    if isinstance(route_decision, RouteDecision):
+        return apply_route_guidance(base_prompt, route_decision)
+    return base_prompt

@@ -1,4 +1,7 @@
-chat_model_name: qwen3.6-plus
+chat_model_provider: deepseek
+chat_model_name: deepseek-v4-pro
+chat_model_api_key_env: MAIN_DEEPSEEK_API_KEY
+chat_model_base_url: https://api.deepseek.com
 embedding_model_name: text-embedding-v4
 reranker_model_name: qwen3-rerank
 reranker_candidate_k: 20

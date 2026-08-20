@@ -1,0 +1,24 @@
+query,expected_status,expected_route,expected_tool,expected_missing_slots
+主刷报错 E01，顺便查一下北京天气,conflict,,,
+查询用户 1001 在 2025-01 的使用报告，再推荐一款新机器,conflict,,,
+机器没有报错，只想知道滤网多久清洗一次,decisive,local_rag,rag_summarize,
+我不是要查天气，只想问滤网怎么清洗,decisive,local_rag,rag_summarize,
+查询用户 ABC 在二零二五年一月的使用报告,needs_clarification,business_query,fetch_external_data,user_id;month
+查询用户 1001 在 2025-13 的使用报告,needs_clarification,business_query,fetch_external_data,month
+最新的滤网清洗标准是什么,conflict,,,
+固件更新后一直报错 E01,conflict,,,
+它这个怎么处理？,no_match,,,
+扫地机主刷卡主了咋弄,decisive,troubleshooting,rag_summarize,
+帮我写一份离职申请,no_match,,,
+帮我查一下,no_match,,,
+明天雨大吗,needs_clarification,business_query,get_weather,city
+E01 是什么意思？,decisive,troubleshooting,rag_summarize,
+北京天气怎样？另外主刷缠绕,conflict,,,
+用户1001的使用报告,needs_clarification,business_query,fetch_external_data,month
+最新固件更新后机器无法回充,conflict,,,
+我不想看使用报告，只想问主刷怎么清理,decisive,local_rag,rag_summarize,
+小智，那个功能怎么开？,no_match,,,
+扫地机滤惘多九洗一次,decisive,local_rag,rag_summarize,
+帮我订一张明天去上海的机票,no_match,,,
+最近机器总是卡住,decisive,troubleshooting,rag_summarize,
+现在有什么新款适合地毯,decisive,web_rag,web_search,
