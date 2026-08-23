@@ -18,7 +18,7 @@
 ## 界面预览
 
 <p align="center">
-  <img src="docs/assets/1.png" alt="RoboCare 智能客服工作台" width="100%">
+  <img src="docs/assets/robocare-dashboard.png" alt="RoboCare 智能客服工作台" width="100%">
 </p>
 
 工作台支持新建会话、快捷问题、流式回答、会话上下文和诊断状态展示。系统品牌为 RoboCare，知识库中的“智扫通”是用于演示的机器人产品品牌。
