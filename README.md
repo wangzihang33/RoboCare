@@ -11,7 +11,6 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11%2B-17324D?style=flat-square" alt="Python">
   <img src="https://img.shields.io/badge/LangChain-Agent-167D78?style=flat-square" alt="LangChain">
-  <img src="https://img.shields.io/badge/LangGraph-runtime-C86645?style=flat-square" alt="LangGraph">
   <img src="https://img.shields.io/badge/Streamlit-workbench-FF4B4B?style=flat-square" alt="Streamlit">
 </p>
 
@@ -36,7 +35,7 @@
 
 ## 技术组成
 
-- **Agent runtime**：LangChain Agent API，底层由 LangGraph 承载执行状态；
+- **Agent runtime**：LangChain Agent API、LangChain tools 与 middleware；
 - **本地检索**：Chroma 向量检索、BM25、RRF 融合召回和 `qwen3-rerank` 重排；
 - **任务路由**：规则引擎处理确定性请求，轻量模型处理冲突和模糊意图；
 - **故障诊断**：短期会话上下文、SQLite 持久化状态、语义反馈解析和动作组编排；
