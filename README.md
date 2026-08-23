@@ -48,8 +48,8 @@
 环境要求：Python 3.11 或以上版本。
 
 ```bash
-git clone https://github.com/wangzihang33/zhisaotong.git
-cd zhisaotong
+git clone https://github.com/wangzihang33/RoboCare.git
+cd RoboCare
 python -m venv .venv
 
 # Windows
