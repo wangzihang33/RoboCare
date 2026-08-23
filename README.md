@@ -34,26 +34,6 @@
 | 多轮故障排查 | 根据诊断状态、用户反馈和动作组推进排障 |
 | 工具执行保护 | 对工具调用执行拦截、重试、熔断、结果校验和脱敏审计 |
 
-## 工作方式
-
-```mermaid
-flowchart LR
-    U[用户问题] --> R[任务路由]
-    R --> A[客服 Agent]
-    R --> D[故障诊断引擎]
-    A --> K[本地 Hybrid RAG]
-    A --> W[Web / 天气 / 报告工具]
-    D --> K
-    D --> S[(SQLite 诊断状态)]
-    A --> H[Hook 生命周期治理]
-    H --> O[结构化客服回答]
-    K --> O
-    W --> O
-    S --> O
-```
-
-路由负责确定问题进入哪条执行链路；Agent 只接收当前链路允许的工具；故障诊断由独立的状态化引擎推进；所有工具调用经过统一的 middleware Hook。
-
 ## 技术组成
 
 - **Agent runtime**：LangChain Agent API，底层由 LangGraph 承载执行状态；
