@@ -21,7 +21,7 @@
 
 RoboCare 提供一个面向客服工作流的聊天工作台，支持产品咨询、故障排查、天气适配、个人设备报告和多轮诊断状态展示。
 
-![RoboCare 智能客服工作台](docs/assets/robocare-dashboard.png)
+启动工作台后即可体验完整的客服交互、路由状态和诊断状态展示。
 
 ## 为什么是 RoboCare
 
