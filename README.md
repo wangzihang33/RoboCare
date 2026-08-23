@@ -1,11 +1,11 @@
 # RoboCare 智能客服系统
 
 <p align="center">
-  <strong>面向扫地机器人场景的可评测、可诊断、可治理客服 Agent</strong>
+  <strong>面向扫地机器人场景的客服 Agent 工作台</strong>
 </p>
 
 <p align="center">
-  RoboCare 将知识检索、任务路由、多轮故障诊断与工具可靠性治理组合成一条完整的客服执行链路。
+  RoboCare 将产品知识问答、联网信息补充、设备报告、故障排查和工具治理组合为一套可运行的客服系统。
 </p>
 
 <p align="center">
@@ -15,141 +15,146 @@
   <img src="https://img.shields.io/badge/Streamlit-workbench-FF4B4B?style=flat-square" alt="Streamlit">
 </p>
 
-> RoboCare 是系统品牌；知识库中的“智扫通”是被客服服务的业务产品品牌。两者保持清晰分离，便于替换产品知识而不改变 Agent 平台。
+## 界面预览
 
-## 体验界面
+<p align="center">
+  <img src="docs/assets/1.png" alt="RoboCare 智能客服工作台" width="100%">
+</p>
 
-RoboCare 提供一个面向客服工作流的聊天工作台，支持产品咨询、故障排查、天气适配、个人设备报告和多轮诊断状态展示。
+工作台支持新建会话、快捷问题、流式回答、会话上下文和诊断状态展示。系统品牌为 RoboCare，知识库中的“智扫通”是用于演示的机器人产品品牌。
 
-启动工作台后即可体验完整的客服交互、路由状态和诊断状态展示。
+## 能力范围
 
-## 为什么是 RoboCare
+| 场景 | 处理方式 |
+| --- | --- |
+| 产品问答、选购与维护 | 从本地产品知识库检索依据并组织回答 |
+| 最新品牌与市场信息 | 通过 Web Search 获取外部信息并保留来源 trace |
+| 天气适配 | 查询指定城市天气，给出扫地或拖地建议 |
+| 个人设备报告 | 从 SQLite 查询设备使用记录并生成报告 |
+| 多轮故障排查 | 根据诊断状态、用户反馈和动作组推进排障 |
+| 工具执行保护 | 对工具调用执行拦截、重试、熔断、结果校验和脱敏审计 |
 
-| 能力 | 用户看到的结果 | 工程实现 |
-| --- | --- | --- |
-| Hybrid RAG | 更稳定、更贴近业务卡片的知识回答 | Vector + BM25 + RRF + qwen3-rerank |
-| 自适应任务路由 | 不同问题进入匹配的执行链路 | 规则引擎 + 轻量模型 + 工具白名单 |
-| 多轮故障诊断 | 能记住已完成动作，避免重复建议 | 短期对话记忆 + SQLite 状态 + 动作组编排 |
-| Hook 生命周期治理 | 工具失败可控，调用过程可追溯 | 拦截、超时、重试、熔断、结果校验、脱敏审计 |
-
-## 核心链路
+## 工作方式
 
 ```mermaid
 flowchart LR
-    U[用户问题] --> R[HybridRouter\n规则 + 轻量模型]
-    R --> A[Route-scoped Agent\n工具白名单]
-    R --> D[Stateful Troubleshooting\n多轮诊断状态机]
-    A --> H[Hook Reliability Layer\n拦截 / 重试 / 熔断 / 审计]
-    A --> K[Hybrid RAG\nChroma + BM25 + RRF]
-    A --> W[Web / Weather / Report Tools]
+    U[用户问题] --> R[任务路由]
+    R --> A[客服 Agent]
+    R --> D[故障诊断引擎]
+    A --> K[本地 Hybrid RAG]
+    A --> W[Web / 天气 / 报告工具]
     D --> K
-    D --> S[(SQLite\n诊断状态与交接摘要)]
-    H --> O[客服回答]
+    D --> S[(SQLite 诊断状态)]
+    A --> H[Hook 生命周期治理]
+    H --> O[结构化客服回答]
     K --> O
     W --> O
     S --> O
 ```
 
-## 项目亮点
+路由负责确定问题进入哪条执行链路；Agent 只接收当前链路允许的工具；故障诊断由独立的状态化引擎推进；所有工具调用经过统一的 middleware Hook。
 
-### 1. Hybrid RAG 检索优化
+## 技术组成
 
-面向客服知识卡片构建评测集，使用 Vector 与 BM25 进行 RRF 融合召回，再通过 `qwen3-rerank` 完成二阶段重排。检索链路保留 `card_id`、来源文件和 metadata，便于回答复盘。
+- **Agent runtime**：LangChain Agent API，底层由 LangGraph 承载执行状态；
+- **本地检索**：Chroma 向量检索、BM25、RRF 融合召回和 `qwen3-rerank` 重排；
+- **任务路由**：规则引擎处理确定性请求，轻量模型处理冲突和模糊意图；
+- **故障诊断**：短期会话上下文、SQLite 持久化状态、语义反馈解析和动作组编排；
+- **工具服务**：本地 RAG、Web Search、天气查询和设备报告统一封装为 LangChain tools；
+- **可靠性治理**：调用前策略拦截，调用中超时、有限重试和熔断，调用后结果校验与脱敏审计；
+- **前端**：Streamlit 客服工作台，前端与 Agent 后端执行链路由同一进程承载。
 
-### 2. 自适应任务路由与 Agent 评测
+## 快速开始
 
-通过规则引擎与轻量模型协同完成分层意图路由，将直接回答、本地知识检索、联网检索、业务查询和故障诊断分配到受限工具集合，并使用困难客服问题集评估路由与工具选择质量。
-
-### 3. 多轮故障诊断与状态管理
-
-融合短期对话记忆与持久化诊断状态，基于用户反馈动态编排排障动作组并推进状态迁移。系统能够识别已完成动作、避免无效重复建议，并在高风险或多次未解决时生成结构化交接摘要。
-
-### 4. Hook 生命周期治理
-
-基于 LangChain middleware 统一实现工具调用前策略拦截、调用中超时重试与熔断降级、调用后结果校验与结构化脱敏审计，提升客服 Agent 异常链路的可恢复性、可观测性与工程化可复盘性。
-
-## 技术架构
-
-```text
-Streamlit Workbench
-        │
-ReactAgent Controller
-        ├── HybridRouter
-        ├── Route-scoped LangChain Agents
-        ├── TroubleshootingEngine
-        └── LangChain Middleware / Hook Manager
-                │
-        ┌───────┴────────┐
-        │                │
-   Local RAG        Business Tools
- Chroma + BM25      Weather / Web / Report
-        │                │
-        └───────┬────────┘
-                │
-       SQLite Diagnosis Store
-```
-
-## 快速启动
-
-建议使用 Python 3.11 或以上版本：
+环境要求：Python 3.11 或以上版本。
 
 ```bash
+git clone https://github.com/wangzihang33/zhisaotong.git
+cd zhisaotong
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
+# macOS / Linux
+# source .venv/bin/activate
+
 pip install -r requirements.txt
-cp .env.example .env
+copy .env.example .env
 streamlit run app.py
 ```
 
-启动后访问 Streamlit 输出的本地地址，通常为 `http://localhost:8501`。
+启动后打开 Streamlit 输出的地址，通常为：
 
-RoboCare 的前端工作台和 Agent 后端执行链路由同一个 Streamlit 进程承载，不需要单独启动 FastAPI 服务。工具调用、RAG 检索、诊断状态和 Hook 审计在同一会话上下文中协同工作。
+```text
+http://localhost:8501
+```
 
-## 评测与验证
+RoboCare 不需要单独启动 FastAPI 服务。Streamlit 进程会同时承载页面、Agent 控制器、RAG 检索、诊断状态和工具调用链路。
 
-项目包含检索、生成、路由和状态化诊断评测脚本：
+## 配置
+
+复制 `.env.example` 为 `.env`，按需配置：
+
+| 变量 | 用途 |
+| --- | --- |
+| `MAIN_DEEPSEEK_API_KEY` | 主客服 Agent 模型 |
+| `ROUTER_DEEPSEEK_API_KEY` | 路由轻量模型 |
+| `DASHSCOPE_API_KEY` | Embedding 与 Reranker |
+| `SERPER_API_KEY` | Web Search |
+| `AMAP_KEY` | 天气查询 |
+| `DIAGNOSIS_DB_PATH` | 诊断状态与交接摘要 SQLite |
+
+不要把真实 API Key 写入源码、README、评测数据或日志。`.env`、运行时 SQLite、Chroma 索引、缓存和 Hook 日志均不应提交到仓库。
+
+## 评测与测试
+
+检索评测：
 
 ```bash
 python -m rag.retriever_evaluation --reset-index --top-k 1 --strategies vector,bm25,fusion,fusion_rerank
 python -m rag.generation_evaluation --strategies vector,fusion_rerank --skip-load-documents
+```
+
+路由与诊断评测：
+
+```bash
 python -m agent.route_evaluation --dataset data/agent_route_eval_hard_dataset.csv
 python -m agent.troubleshooting_evaluation --dataset data/diagnosis_eval_hard_dataset.csv
 ```
 
-测试套件覆盖路由决策、工具权限、RAG 服务、诊断状态、自然反馈解析、Hook 可靠性和集成链路。
+运行自动化测试：
+
+```bash
+python -m pytest tests -q
+```
+
+测试覆盖路由决策、工具白名单、提示词过滤、RAG 服务、诊断状态迁移、自然语言反馈、Hook 可靠性和集成执行链路。
 
 ## 目录结构
 
 ```text
 .
-├── app.py                         # Streamlit 聊天工作台
+├── app.py                         # Streamlit 客服工作台
 ├── agent/
 │   ├── react_agent.py             # Agent 控制器与流式执行
-│   ├── routing.py                 # 规则 + 轻量模型路由
-│   ├── troubleshooting/           # 多轮诊断状态机与持久化状态
-│   ├── hooks/                     # 生命周期、策略、脱敏、审计与报表
-│   └── tools/                     # LangChain 工具与业务服务层
-├── rag/                           # Chroma、BM25、RRF、Reranker 与评测
-├── websearch/                     # 搜索、抓取、过滤、去重与 TTL 缓存
-├── data/                          # 产品知识、评测集与演示数据
+│   ├── routing.py                 # 任务路由与工具集合
+│   ├── troubleshooting/           # 多轮故障诊断与持久化状态
+│   ├── hooks/                     # 生命周期、策略、脱敏和审计
+│   └── tools/                     # LangChain tools 与业务服务层
+├── rag/                           # Chroma、BM25、RRF、Reranker 和评测
+├── websearch/                     # 搜索、抓取、过滤和 TTL 缓存
+├── data/                          # 产品知识、评测集和演示数据
 ├── config/                        # Agent、RAG、诊断和 Web 配置
-├── prompts/                       # Agent、RAG、报告生成提示词
-└── docs/                          # 分阶段设计与验收文档
+├── prompts/                       # Agent、RAG、报告提示词
+├── docs/                          # 设计文档、验收记录和界面截图
+└── tests/                         # 自动化测试
 ```
 
-## 安全与运行说明
+## 运行边界
 
-- API Key 只放在本地 `.env`，不会提交到 Git；
-- 工具审计日志只保存脱敏摘要，不直接写入完整敏感参数；
-- 外部搜索、天气和 Judge 评测会调用第三方 API，需要对应配置；
-- Chroma、SQLite、缓存和运行日志属于本地运行产物，不作为源码依赖提交；
-- 生产环境部署多实例时，应将 Hook 熔断状态迁移到共享存储，例如 Redis。
-
-## 项目定位
-
-RoboCare 不是一个只会回答问题的聊天 Demo，而是一套围绕客服业务设计的 Agent 工程系统：
-
-```text
-知识有依据       → Hybrid RAG 与评测集
-任务有分流       → 自适应路由与工具隔离
-故障有状态       → 多轮诊断与动作组编排
-工具有边界       → Hook 可靠性与审计治理
-```
+- 当前项目使用 Streamlit 单进程承载前端和 Agent 执行链路；
+- Hook 熔断状态保存在当前 Python 进程内，多实例部署时应迁移到 Redis 等共享存储；
+- 外部搜索、天气和模型评测需要对应 API 配置；
+- 本地知识库内容是演示产品资料，替换 `data/` 后需重新构建向量索引；
+- 真实生产环境还需要接入认证、限流、密钥托管和客服平台工单系统。
