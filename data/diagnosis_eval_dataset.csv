@@ -1,0 +1,26 @@
+session_id,turn,query,expected_action,expected_status,expected_symptom,expected_escalated
+case_recharge,1,机器人无法回充,give_step,waiting_feedback,cannot_recharge,0
+case_recharge,2,清理过了还是不行,give_step,waiting_feedback,cannot_recharge,0
+case_recharge,3,仍然没有解决,give_step,waiting_feedback,cannot_recharge,0
+case_recharge,4,现在已经恢复正常了,resolve,resolved,cannot_recharge,0
+case_noise,1,机器人工作时持续异响,give_step,waiting_feedback,abnormal_noise,0
+case_noise,2,做过了仍然没有解决,give_step,waiting_feedback,abnormal_noise,0
+case_noise,3,还是不行,give_step,waiting_feedback,abnormal_noise,0
+case_noise,4,依然有异响,escalate,escalated,abnormal_noise,1
+case_risk,1,机器突然冒烟还有烧焦味,escalate,escalated,,1
+case_human,1,机器人水箱漏水,give_step,waiting_feedback,water_leak,0
+case_human,2,先别排查了请帮我转人工客服,escalate,escalated,water_leak,1
+case_ambiguous,1,机器人有点问题,ask_symptom,collecting,,0
+case_ambiguous,2,它运行时一直原地打转,give_step,waiting_feedback,spinning_in_place,0
+case_ambiguous,3,擦完以后已经好了,resolve,resolved,spinning_in_place,0
+case_no_water,1,拖地的时候完全不出水,give_step,waiting_feedback,no_water,0
+case_no_water,2,我已经按你说的操作了,ask_feedback,waiting_feedback,no_water,0
+case_no_water,3,还是不行,give_step,waiting_feedback,no_water,0
+case_no_water,4,现在可以了,resolve,resolved,no_water,0
+case_error_code,1,机器报错 E01,give_step,waiting_feedback,main_brush_jam,0
+case_error_code,2,拆下主刷后仍未解决,give_step,waiting_feedback,main_brush_jam,0
+case_error_code,3,清掉缠绕物以后正常了,resolve,resolved,main_brush_jam,0
+case_unknown,1,设备表现不太正常,ask_symptom,collecting,,0
+case_unknown,2,就是不太对劲,escalate,escalated,,1
+case_cancel,1,APP 一直显示离线,give_step,waiting_feedback,wifi_offline,0
+case_cancel,2,不用排查了,cancel,cancelled,wifi_offline,0

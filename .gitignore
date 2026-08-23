@@ -7,3 +7,5 @@ cache/
 data/external/*.db
 data/external/*.db-shm
 data/external/*.db-wal
+.pytest-tmp/
+streamlit-preview.log

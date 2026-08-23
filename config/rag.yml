@@ -2,7 +2,11 @@ chat_model_provider: deepseek
 chat_model_name: deepseek-v4-pro
 chat_model_api_key_env: MAIN_DEEPSEEK_API_KEY
 chat_model_base_url: https://api.deepseek.com
-embedding_model_name: text-embedding-v4
+diagnosis_observation_provider: deepseek
+diagnosis_observation_model: deepseek-v4-flash
+diagnosis_observation_api_key_env: MAIN_DEEPSEEK_API_KEY
+diagnosis_observation_base_url: https://api.deepseek.com
+embedding_model_name: qwen3.7-text-embedding
 reranker_model_name: qwen3-rerank
 reranker_candidate_k: 20
 reranker_timeout_seconds: 30

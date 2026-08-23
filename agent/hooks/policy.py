@@ -14,6 +14,17 @@ class ToolPolicy:
     high_cost: bool = False
     accesses_user_data: bool = False
     allow_sensitive_input: bool = False
+    timeout_seconds: float | None = None
+    max_retries: int = 0
+    retry_backoff_seconds: float = 0.05
+    retryable_errors: tuple[type[BaseException], ...] = (
+        TimeoutError,
+        ConnectionError,
+    )
+    circuit_failure_threshold: int = 3
+    circuit_recovery_seconds: float = 30.0
+    validate_result: bool = True
+    fallback_message: str = ""
 
 
 @dataclass(frozen=True)
@@ -29,16 +40,46 @@ class HookDecision:
 
 
 TOOL_POLICIES: dict[str, ToolPolicy] = {
-    "rag_summarize": ToolPolicy(tool_type="local_rag", risk_level="low", high_cost=True),
-    "web_search": ToolPolicy(tool_type="web_search", risk_level="medium", requires_network=True, high_cost=True),
-    "get_weather": ToolPolicy(tool_type="weather", risk_level="low", requires_network=True),
+    "rag_summarize": ToolPolicy(
+        tool_type="local_rag",
+        risk_level="low",
+        high_cost=True,
+        timeout_seconds=30.0,
+        max_retries=1,
+        fallback_message="本地知识库暂时不可用，请稍后重试。",
+    ),
+    "web_search": ToolPolicy(
+        tool_type="web_search",
+        risk_level="medium",
+        requires_network=True,
+        high_cost=True,
+        timeout_seconds=20.0,
+        max_retries=2,
+        fallback_message="联网检索暂时不可用，请稍后重试或换一种问法。",
+    ),
+    "get_weather": ToolPolicy(
+        tool_type="weather",
+        risk_level="low",
+        requires_network=True,
+        timeout_seconds=10.0,
+        max_retries=1,
+        fallback_message="天气服务暂时不可用，请稍后重试。",
+    ),
     "fetch_external_data": ToolPolicy(
         tool_type="user_data",
         risk_level="high",
         accesses_user_data=True,
         allow_sensitive_input=False,
+        timeout_seconds=8.0,
+        max_retries=1,
+        fallback_message="设备数据服务暂时不可用，请稍后重试。",
     ),
-    "fill_context_for_report": ToolPolicy(tool_type="report_context", risk_level="low"),
+    "fill_context_for_report": ToolPolicy(
+        tool_type="report_context",
+        risk_level="low",
+        timeout_seconds=5.0,
+        fallback_message="报告上下文暂时不可用，请稍后重试。",
+    ),
 }
 
 
@@ -46,8 +87,13 @@ def get_tool_policy(tool_name: str) -> ToolPolicy:
     return TOOL_POLICIES.get(tool_name, ToolPolicy(tool_type="unknown", risk_level="medium"))
 
 
-def evaluate_tool_call(tool_name: str, args: Any) -> HookDecision:
-    policy = get_tool_policy(tool_name)
+def evaluate_tool_call(
+    tool_name: str,
+    args: Any,
+    *,
+    policy: ToolPolicy | None = None,
+) -> HookDecision:
+    policy = policy or get_tool_policy(tool_name)
     sensitive_types = detect_sensitive_types(args)
 
     if sensitive_types and not policy.allow_sensitive_input:

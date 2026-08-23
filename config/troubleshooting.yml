@@ -1,0 +1,208 @@
+symptoms:
+  cannot_recharge:
+    label: 无法回充
+    evidence_id: TROUBLE-003
+    terminal_failure_signals: [换了插座]
+    action_groups:
+      - id: recharge-clear-area
+        actions: [清理充电座周围 3 米内的障碍物，并确保充电座正前方无遮挡]
+        verification:
+          success_signals: [能回充, 能自己回去, 成功回到充电座, 找到充电位置, 找到充电座]
+          failure_signals: [还是回不去, 没能回去, 仍然回充失败, 回充仍失败, 还是原样, 没有起色, 故障依旧]
+        on_success: resolved
+        on_failure: recharge-clean-sensor
+      - id: recharge-clean-sensor
+        actions: [关闭设备电源后，擦拭机器人回充传感器和充电触点]
+        verification:
+          success_signals: [回充正常, 能回到充电座, 自己回去了, 找到充电位置]
+          failure_signals: [还是无法回充, 仍然回不到充电座, 问题还在, 还是原样, 没有起色, 故障依旧, 没有变化, 没变化]
+        on_success: resolved
+        on_failure: recharge-check-power
+      - id: recharge-check-power
+        actions: [确认充电座电源指示正常，再将机器人手动放回充电座测试]
+        verification:
+          success_signals: [已经恢复, 正常回充, 可以正常充电]
+          failure_signals: [仍然回充失败, 还是不能回充, 没有改善, 还是原样, 没有起色, 故障依旧, 仍然回不去]
+        on_success: resolved
+        on_failure: handoff
+  abnormal_noise:
+    label: 工作异响
+    evidence_id: TROUBLE-006
+    terminal_failure_signals: [换了尘盒]
+    action_groups:
+      - id: noise-clean-brushes
+        actions: [关闭设备电源，检查并清理主刷和边刷上的缠绕物]
+        verification:
+          success_signals: [不再有异响, 声音完全消失, 不响了, 没有声音, 听不到了, 运行稳定]
+          failure_signals: [还是有声音, 仍有异响, 依然有异响, 问题还在, 依旧有动静, 噪声未消失]
+        on_success: resolved
+        on_failure: noise-check-wheels
+      - id: noise-check-wheels
+        actions: [转动驱动轮和万向轮，清除卡住轮组的异物]
+        verification:
+          success_signals: [声音消失, 已经不响, 没有噪音, 听不到了]
+          failure_signals: [还是有摩擦声, 仍然咔咔响, 噪音还在, 依旧有动静, 噪声未消失, 仍旧如此]
+        on_success: resolved
+        on_failure: noise-empty-bin
+      - id: noise-empty-bin
+        actions: [清空尘盒并重新安装主刷组件后短时试运行]
+        verification:
+          success_signals: [异响消失, 正常运行, 声音正常了]
+          failure_signals: [仍然有异响, 还是不正常, 没有改善, 依旧有动静, 噪声未消失, 仍旧如此, 没有解决]
+        on_success: resolved
+        on_failure: handoff
+  spinning_in_place:
+    label: 原地打转
+    evidence_id: TROUBLE-009
+    terminal_failure_signals: [换到平地]
+    action_groups:
+      - id: spinning-clean-wheels
+        actions: [关闭设备电源，清理驱动轮和万向轮上的缠绕物]
+        verification:
+          success_signals: [不再转圈, 可以直行, 能走直, 行走正常]
+          failure_signals: [还是原地转, 还是绕圈, 仍然打转, 依旧无法直行, 没有变化]
+        on_success: resolved
+        on_failure: spinning-clean-cliff-sensors
+      - id: spinning-clean-cliff-sensors
+        actions: [使用干布擦拭底部防跌落传感器]
+        verification:
+          success_signals: [行走恢复, 不再原地打转, 能正常走直线]
+          failure_signals: [还是一直转, 还是绕圈, 仍然无法直行, 问题还在, 没有变化]
+        on_success: resolved
+        on_failure: spinning-flat-restart
+      - id: spinning-flat-restart
+        actions: [将设备移到平整、光线稳定的地面后重新启动]
+        verification:
+          success_signals: [恢复正常, 可以正常行走, 已经不转了]
+          failure_signals: [仍然原地打转, 还是不能直行, 没有改善, 没有变化, 还是绕圈]
+        on_success: resolved
+        on_failure: handoff
+  water_leak:
+    label: 水箱漏水
+    evidence_id: TROUBLE-005
+    terminal_failure_signals: [出水管]
+    action_groups:
+      - id: leak-check-cap
+        actions: [取下水箱并确认水箱盖已经拧紧]
+        verification:
+          success_signals: [不再漏水, 已经不滴了, 地面没有水了, 地板保持干燥, 地板干燥]
+          failure_signals: [还是漏水, 仍然滴水, 问题还在, 漏水依然存在, 仍然如此]
+        on_success: resolved
+        on_failure: leak-check-seal
+      - id: leak-check-seal
+        actions: [检查密封圈是否老化、脱落或破损]
+        verification:
+          success_signals: [漏水停止, 不再渗水, 已经正常了]
+          failure_signals: [依然漏水, 还是会滴, 没有改善, 漏水依然存在, 仍然如此]
+        on_success: resolved
+        on_failure: leak-check-pipe
+      - id: leak-check-pipe
+        actions: [检查出水管和出水口是否堵塞或松动]
+        verification:
+          success_signals: [已经不漏, 水管正常, 不再滴水]
+          failure_signals: [仍然漏水, 还是有水, 问题没有解决, 漏水依然存在, 仍然如此]
+        on_success: resolved
+        on_failure: handoff
+  no_water:
+    label: 拖地不出水
+    evidence_id: TROUBLE-008
+    terminal_failure_signals: [调整设置]
+    action_groups:
+      - id: no-water-reseat-tank
+        actions: [重新安装水箱并确认卡扣已经到位]
+        verification:
+          success_signals: [开始出水, 拖布湿了, 已经能拖地了, 能带水拖]
+          failure_signals: [还是不出水, 拖布依旧是干的, 没有改善, 还是干的, 不见好转]
+        on_success: resolved
+        on_failure: no-water-clean-outlet
+      - id: no-water-clean-outlet
+        actions: [清理出水口，确认没有水垢或异物堵塞]
+        verification:
+          success_signals: [出水正常, 拖布变湿, 已经有水了]
+          failure_signals: [仍然不出水, 还是没有水, 问题还在, 还是干的, 不见好转, 问题仍旧]
+        on_success: resolved
+        on_failure: no-water-check-mode
+      - id: no-water-check-mode
+        actions: [在 APP 中确认已经选择拖地模式和合适的出水档位]
+        verification:
+          success_signals: [可以正常出水, 拖地正常了, 已经好了]
+          failure_signals: [依然不出水, 还是没有拖痕, 没有改善, 还是干的, 问题仍旧, 不见好转, 还是这样]
+        on_success: resolved
+        on_failure: handoff
+  wifi_offline:
+    label: 配网或离线
+    evidence_id: TROUBLE-001
+    terminal_failure_signals: [重新绑定]
+    action_groups:
+      - id: wifi-check-band
+        actions: [确认手机与机器人连接的是同一个 2.4G WiFi 网络]
+        verification:
+          success_signals: [已经连上, 设备在线, 连接正常, 显示已连接]
+          failure_signals: [还是离线, 仍然连不上, 问题还在, 没有反应]
+        on_success: resolved
+        on_failure: wifi-near-router
+      - id: wifi-near-router
+        actions: [将机器人靠近路由器并重新输入 WiFi 密码]
+        verification:
+          success_signals: [设备在线了, 已经连接, 可以连上 WiFi]
+          failure_signals: [依旧离线, 还是连接失败, 没有改善, 没有反应, 重新绑定仍然失败]
+        on_success: resolved
+        on_failure: wifi-rebind
+      - id: wifi-rebind
+        actions: [重启路由器和机器人后，在 APP 中重新绑定设备]
+        verification:
+          success_signals: [重新绑定后在线, 恢复在线, 连接成功]
+          failure_signals: [仍然离线, 还是无法绑定, 问题没有解决, 没有反应, 重新绑定仍然失败]
+        on_success: resolved
+        on_failure: handoff
+  low_suction:
+    label: 吸力下降
+    evidence_id: TROUBLE-002
+    terminal_failure_signals: [风道也清过]
+    action_groups:
+      - id: suction-empty-bin
+        actions: [清空尘盒并检查滤网是否堵塞]
+        verification:
+          success_signals: [吸力恢复, 能吸起来了, 清扫正常]
+          failure_signals: [还是吸不动, 依然吸力小, 吸力还是弱, 灰尘还是吸不进去, 没有改善]
+        on_success: resolved
+        on_failure: suction-clear-airway
+      - id: suction-clear-airway
+        actions: [清理风道和吸口处的遮挡物]
+        verification:
+          success_signals: [吸力正常, 可以吸尘了, 已经能吸起来, 现在好多了]
+          failure_signals: [仍然吸不动, 还是吸力下降, 问题还在, 效果没回来]
+        on_success: resolved
+        on_failure: suction-clean-brush
+      - id: suction-clean-brush
+        actions: [关闭设备电源并清理主刷上的毛发和缠绕物]
+        verification:
+          success_signals: [已经能用了, 吸尘正常了, 恢复正常, 现在好多了]
+          failure_signals: [还是吸不起来, 依旧清理不干净, 没有改善, 效果没回来]
+        on_success: resolved
+        on_failure: handoff
+  main_brush_jam:
+    label: 主刷缠绕或 E01
+    evidence_id: TROUBLE-002
+    error_codes: [E01]
+    action_groups:
+      - id: brush-clean
+        actions:
+          - 关闭设备电源
+          - 拆下主刷
+          - 清理主刷两端、轴承处的毛发、线材与异物
+        verification:
+          success_signals: [主刷恢复转动, 报错消失, 设备正常了, 可以正常运行]
+          failure_signals: [还是卡住, 仍然报 E01, 还是报错, 问题还在]
+        on_success: resolved
+        on_failure: inspect-installation
+      - id: inspect-installation
+        actions:
+          - 检查主刷轴承是否损坏
+          - 检查主刷是否安装到位
+          - 重新安装主刷并重启设备测试
+        verification:
+          success_signals: [主刷恢复转动, 设备正常运行, 报错消失]
+          failure_signals: [仍然报错, 还是不能运行, 问题没有解决]
+        on_success: resolved
+        on_failure: handoff

@@ -1,0 +1,17 @@
+session_id,turn,query,expected_action,expected_status,expected_symptom,expected_escalated
+hard_recharge,1,它老是回不到充电座,give_step,waiting_feedback,cannot_recharge,0
+hard_recharge,2,清过障碍了可问题还在,give_step,waiting_feedback,cannot_recharge,0
+hard_recharge,3,这回能自己回去了,resolve,resolved,cannot_recharge,0
+hard_noise,1,清扫时一直咔咔响,give_step,waiting_feedback,abnormal_noise,0
+hard_noise,2,清理完就不响了,resolve,resolved,abnormal_noise,0
+hard_dry_mop,1,拖布一直是干的,give_step,waiting_feedback,no_water,0
+hard_dry_mop,2,重新装了也没改善,give_step,waiting_feedback,no_water,0
+hard_dry_mop,3,调了出水档位就好了,resolve,resolved,no_water,0
+hard_risk,1,机器有股糊味而且明显发烫,escalate,escalated,,1
+hard_human,1,能不能找个真人处理,escalate,escalated,,1
+hard_offline,1,APP 一直显示离线,give_step,waiting_feedback,wifi_offline,0
+hard_offline,2,照做了但问题还在,give_step,waiting_feedback,wifi_offline,0
+hard_offline,3,重新绑定以后在线了,resolve,resolved,wifi_offline,0
+hard_typo,1,机器人一直回冲失败,give_step,waiting_feedback,cannot_recharge,0
+hard_leak,1,水箱停机后还一直滴,give_step,waiting_feedback,water_leak,0
+hard_suction,1,感觉机器吸不动灰了,give_step,waiting_feedback,low_suction,0

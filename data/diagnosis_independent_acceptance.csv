@@ -1,0 +1,88 @@
+session_id,turn,query,expected_action,expected_status,expected_symptom,expected_escalated
+accept_recharge_a,1,我家的机器老是回不到充电座,give_step,waiting_feedback,cannot_recharge,0
+accept_recharge_a,2,把路上的东西挪开了但问题还在,give_step,waiting_feedback,cannot_recharge,0
+accept_recharge_a,3,按第二步处理后依然失败,give_step,waiting_feedback,cannot_recharge,0
+accept_recharge_a,4,这次能自己回去了,resolve,resolved,cannot_recharge,0
+accept_recharge_b,1,我的设备型号 X300,ask_symptom,collecting,,0
+accept_recharge_b,2,它这两天总是回充失败,give_step,waiting_feedback,cannot_recharge,0
+accept_recharge_b,3,清洁触点后已经好了,resolve,resolved,cannot_recharge,0
+accept_noise_a,1,运行的时候会发出尖锐声,give_step,waiting_feedback,abnormal_noise,0
+accept_noise_a,2,清理主刷以后还是有声音,give_step,waiting_feedback,abnormal_noise,0
+accept_noise_a,3,现在声音完全消失了,resolve,resolved,abnormal_noise,0
+accept_noise_b,1,机器清扫时一直咔咔响,give_step,waiting_feedback,abnormal_noise,0
+accept_noise_b,2,缠绕物清掉以后不响了,resolve,resolved,abnormal_noise,0
+accept_spin_a,1,一启动就在原地转圈,give_step,waiting_feedback,spinning_in_place,0
+accept_spin_a,2,轮子已经清过但还是不行,give_step,waiting_feedback,spinning_in_place,0
+accept_spin_a,3,擦完传感器就正常了,resolve,resolved,spinning_in_place,0
+accept_spin_b,1,机器人只会原地打转,give_step,waiting_feedback,spinning_in_place,0
+accept_spin_b,2,移到平地之后可以了,resolve,resolved,spinning_in_place,0
+accept_leak_a,1,水箱装好后地面还是会积水,give_step,waiting_feedback,water_leak,0
+accept_leak_a,2,水箱盖拧紧了仍未改善,give_step,waiting_feedback,water_leak,0
+accept_leak_a,3,重新装好密封圈后正常了,resolve,resolved,water_leak,0
+accept_leak_b,1,机器停下来以后水箱还会滴水,give_step,waiting_feedback,water_leak,0
+accept_leak_b,2,换好密封圈以后不再漏了,resolve,resolved,water_leak,0
+accept_no_water_a,1,拖地时拖布一直是干的,give_step,waiting_feedback,no_water,0
+accept_no_water_a,2,水箱重新装过还是没改善,give_step,waiting_feedback,no_water,0
+accept_no_water_a,3,清理出水口以后可以了,resolve,resolved,no_water,0
+accept_no_water_b,1,拖地模式下完全没有拖痕,give_step,waiting_feedback,no_water,0
+accept_no_water_b,2,调整出水档位后已经好了,resolve,resolved,no_water,0
+accept_wifi_a,1,APP 里一直显示设备离线,give_step,waiting_feedback,wifi_offline,0
+accept_wifi_a,2,确认了网络频段但问题还在,give_step,waiting_feedback,wifi_offline,0
+accept_wifi_a,3,靠近路由器重新绑定后在线了,resolve,resolved,wifi_offline,0
+accept_wifi_b,1,型号 R8,ask_symptom,collecting,,0
+accept_wifi_b,2,这个机器人怎么都连不上 WiFi,give_step,waiting_feedback,wifi_offline,0
+accept_wifi_b,3,重新输入密码以后恢复正常,resolve,resolved,wifi_offline,0
+accept_suction_a,1,最近机器吸不动灰了,give_step,waiting_feedback,low_suction,0
+accept_suction_a,2,尘盒清空后依然没有改善,give_step,waiting_feedback,low_suction,0
+accept_suction_a,3,把风道清干净后已经好了,resolve,resolved,low_suction,0
+accept_suction_b,1,清扫完还有很多灰像是吸力变小了,give_step,waiting_feedback,low_suction,0
+accept_suction_b,2,清理滤网以后能用了,resolve,resolved,low_suction,0
+accept_brush_a,1,机器屏幕显示 E01,give_step,waiting_feedback,main_brush_jam,0
+accept_brush_a,2,主刷拆下来以后还是没解决,give_step,waiting_feedback,main_brush_jam,0
+accept_brush_a,3,轴承上的头发清掉后正常了,resolve,resolved,main_brush_jam,0
+accept_ambiguous_a,1,机器人今天表现很奇怪,ask_symptom,collecting,,0
+accept_ambiguous_a,2,具体是工作时噪音特别大,give_step,waiting_feedback,abnormal_noise,0
+accept_ambiguous_a,3,清完主刷已经恢复正常,resolve,resolved,abnormal_noise,0
+accept_exhaust_recharge,1,扫地机无法回充,give_step,waiting_feedback,cannot_recharge,0
+accept_exhaust_recharge,2,第一项做了还是不行,give_step,waiting_feedback,cannot_recharge,0
+accept_exhaust_recharge,3,第二项做完仍然没解决,give_step,waiting_feedback,cannot_recharge,0
+accept_exhaust_recharge,4,最后一步也无效,escalate,escalated,cannot_recharge,1
+accept_exhaust_noise,1,设备运行时有摩擦声,give_step,waiting_feedback,abnormal_noise,0
+accept_exhaust_noise,2,清过主刷还是不行,give_step,waiting_feedback,abnormal_noise,0
+accept_exhaust_noise,3,检查轮子后问题还在,give_step,waiting_feedback,abnormal_noise,0
+accept_exhaust_noise,4,清空尘盒也没有改善,escalate,escalated,abnormal_noise,1
+accept_exhaust_spin,1,机器人一直原地打转,give_step,waiting_feedback,spinning_in_place,0
+accept_exhaust_spin,2,驱动轮清理后仍未解决,give_step,waiting_feedback,spinning_in_place,0
+accept_exhaust_spin,3,传感器擦过了还是不行,give_step,waiting_feedback,spinning_in_place,0
+accept_exhaust_spin,4,换到平整地面也没用,escalate,escalated,spinning_in_place,1
+accept_exhaust_leak,1,扫拖机器人水箱漏水,give_step,waiting_feedback,water_leak,0
+accept_exhaust_leak,2,盖子确认过但问题还在,give_step,waiting_feedback,water_leak,0
+accept_exhaust_leak,3,密封圈没有破损还是会漏,give_step,waiting_feedback,water_leak,0
+accept_exhaust_leak,4,检查水管以后仍然漏水,escalate,escalated,water_leak,1
+accept_exhaust_wifi,1,APP 显示机器人离线,give_step,waiting_feedback,wifi_offline,0
+accept_exhaust_wifi,2,2.4G 网络确认过还是不行,give_step,waiting_feedback,wifi_offline,0
+accept_exhaust_wifi,3,靠近路由器后仍未改善,give_step,waiting_feedback,wifi_offline,0
+accept_exhaust_wifi,4,重新绑定也没有解决,escalate,escalated,wifi_offline,1
+accept_exhaust_suction,1,扫地机器人吸力下降,give_step,waiting_feedback,low_suction,0
+accept_exhaust_suction,2,清空尘盒后仍然没改善,give_step,waiting_feedback,low_suction,0
+accept_exhaust_suction,3,风道清理过但问题还在,give_step,waiting_feedback,low_suction,0
+accept_exhaust_suction,4,主刷也清了还是没用,escalate,escalated,low_suction,1
+accept_risk_smoke,1,扫地机底部突然开始冒烟,escalate,escalated,,1
+accept_risk_battery,1,充电时发现电池外壳鼓起来了,escalate,escalated,,1
+accept_risk_water,1,机器进水以后还在通电运行,escalate,escalated,,1
+accept_risk_shock,1,摸外壳有麻手的感觉像是漏电,escalate,escalated,,1
+accept_risk_fire,1,充电座刚刚起火了,escalate,escalated,,1
+accept_human_direct,1,这个问题请直接转人工,escalate,escalated,,1
+accept_human_real,1,我不想继续试了找个真人吧,escalate,escalated,,1
+accept_human_service,1,麻烦安排售后人员处理,escalate,escalated,,1
+accept_human_agent,1,现在能接人工客服吗,escalate,escalated,,1
+accept_cancel_exact,1,最近每次清扫结束都无法自动回充,give_step,waiting_feedback,cannot_recharge,0
+accept_cancel_exact,2,停止诊断,cancel,cancelled,cannot_recharge,0
+accept_cancel_nomore,1,水箱一直漏水,give_step,waiting_feedback,water_leak,0
+accept_cancel_nomore,2,先到这里不用排查了,cancel,cancelled,water_leak,0
+accept_cancel_pause,1,机器人原地转圈,give_step,waiting_feedback,spinning_in_place,0
+accept_cancel_pause,2,先暂停后面再查,cancel,cancelled,spinning_in_place,0
+accept_cancel_check,1,手机 APP 里的设备状态始终离线,give_step,waiting_feedback,wifi_offline,0
+accept_cancel_check,2,不用再检查了,cancel,cancelled,wifi_offline,0
+accept_cancel_end,1,机器工作时持续异响,give_step,waiting_feedback,abnormal_noise,0
+accept_cancel_end,2,结束诊断,cancel,cancelled,abnormal_noise,0

@@ -52,6 +52,7 @@ def load_agent_config(config_path: str=get_abs_path("config/agent.yml"), encodin
         "amap_key": "AMAP_KEY",
         "amap_weather_api_url": "AMAP_WEATHER_API_URL",
         "external_data_db_path": "USER_USAGE_DB_PATH",
+        "diagnosis_db_path": "DIAGNOSIS_DB_PATH",
         "external_data_path": "USER_USAGE_SEED_CSV_PATH",
         "router_llm_enabled": "ROUTER_LLM_ENABLED",
         "router_model_name": "ROUTER_MODEL_NAME",

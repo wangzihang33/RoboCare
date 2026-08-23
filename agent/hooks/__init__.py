@@ -1,3 +1,3 @@
-from agent.hooks.lifecycle import ToolHookManager
+from agent.hooks.lifecycle import CircuitOpenError, ToolHookManager, ToolOutputError
 
-__all__ = ["ToolHookManager"]
+__all__ = ["CircuitOpenError", "ToolHookManager", "ToolOutputError"]

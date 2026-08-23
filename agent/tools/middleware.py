@@ -44,7 +44,11 @@ def monitor_tool(
         )
 
     try:
-        result = handler(request)
+        result = tool_hook_manager.execute_tool(
+            hook_context,
+            handler,
+            request=request,
+        )
         tool_hook_manager.after_tool_call(hook_context, result)
         tool_hook_manager.record_tool_trace(hook_context, _extract_tool_trace(tool_name))
         logger.info(f"[tool monitor] success tool={tool_name}")
@@ -94,7 +98,11 @@ def log_before_model(
 @dynamic_prompt
 def report_prompt_switch(Request: ModelRequest):
     is_report = Request.runtime.context.get("is_report", False)
-    base_prompt = load_report_prompts() if is_report else load_system_prompts()
+    if is_report:
+        base_prompt = load_report_prompts()
+    else:
+        tool_names = Request.runtime.context.get("tool_names")
+        base_prompt = load_system_prompts(tool_names)
     route_decision = Request.runtime.context.get("route_decision")
     if isinstance(route_decision, RouteDecision):
         return apply_route_guidance(base_prompt, route_decision)
